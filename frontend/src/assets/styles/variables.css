@@ -1,0 +1,17 @@
+/**
+ * variables.css - CSS 变量定义（设计 Token）
+ * 
+ * 包含：
+ *   - 主题色彩（primary, success, warning, danger, info）
+ *   - 背景色（深色主题）
+ *   - 文字颜色
+ *   - 间距尺寸（spacing-xs, sm, md, lg, xl）
+ *   - 圆角大小
+ *   - 阴影效果
+ *   - 字体设置
+ *   - 过渡时间
+ */
+
+:root {
+  /* 后续实现时填充具体变量值 */
+}

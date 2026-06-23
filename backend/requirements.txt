@@ -1,0 +1,28 @@
+# NodeHarbor 后端依赖
+# Web 框架
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+
+# 数据库 ORM
+sqlalchemy==2.0.35
+
+# JWT Token 认证
+python-jose[cryptography]==3.3.0
+
+# 密码加密
+passlib[bcrypt]==1.7.4
+
+# 文件上传支持
+python-multipart==0.0.9
+
+# 异步 HTTP 客户端（从 GitHub 下载客户端文件）
+aiohttp==3.10.0
+
+# YAML 解析
+pyyaml==6.0.2
+
+# 异步文件操作
+aiofiles==24.1.0
+
+# 环境变量管理
+python-dotenv==1.0.1
