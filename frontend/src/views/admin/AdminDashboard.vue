@@ -4,6 +4,7 @@
   页面作用：
     - 展示系统全局运行状态统计卡片（配置总数、已缓存客户端数、数据库大小、下载缓存占用）
     - 提供常用管理操作的快捷入口（上传配置、管理配置、获取客户端）
+    - 针对移动端适配 2 列紧凑指标网格与触控优化
   
   接口调用：
     - GET /api/system/status: 获取系统指标及容量统计数据
@@ -14,7 +15,7 @@
     
     <!-- 系统统计指标网格 -->
     <div class="stats-grid">
-      <el-card class="stat-card">
+      <el-card class="stat-card" shadow="hover">
         <div class="stat-content">
           <div class="stat-icon configs-icon">
             <el-icon><Document /></el-icon>
@@ -26,7 +27,7 @@
         </div>
       </el-card>
       
-      <el-card class="stat-card">
+      <el-card class="stat-card" shadow="hover">
         <div class="stat-content">
           <div class="stat-icon clients-icon">
             <el-icon><Download /></el-icon>
@@ -38,7 +39,7 @@
         </div>
       </el-card>
 
-      <el-card class="stat-card">
+      <el-card class="stat-card" shadow="hover">
         <div class="stat-content">
           <div class="stat-icon db-icon">
             <el-icon><Coin /></el-icon>
@@ -50,7 +51,7 @@
         </div>
       </el-card>
 
-      <el-card class="stat-card">
+      <el-card class="stat-card" shadow="hover">
         <div class="stat-content">
           <div class="stat-icon storage-icon">
             <el-icon><Folder /></el-icon>
@@ -58,7 +59,7 @@
           <div class="stat-info">
             <div class="stat-value">{{ formatSize(stats.downloads_size) }}</div>
             <div class="stat-label-row">
-              <span class="stat-label">下载缓存大小</span>
+              <span class="stat-label">下载缓存</span>
               <el-button 
                 v-if="stats.downloads_size > 0"
                 type="danger" 
@@ -89,13 +90,16 @@
       </el-card>
       <el-card class="action-card" @click="router.push('/admin/clients')">
         <el-icon class="action-icon"><Download /></el-icon>
-        <span class="action-text">获取客户端</span>
+        <span class="action-text">软件下载</span>
       </el-card>
     </div>
   </div>
 </template>
 
 <script setup>
+/**
+ * 引入依赖与 API
+ */
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../../api'
@@ -161,7 +165,7 @@ const handleClearCache = async () => {
  * @returns {string} 格式化结果 (如 '1.24 MB')
  */
 const formatSize = (bytes) => {
-  if (bytes === 0) return '0 B'
+  if (!bytes || bytes === 0) return '0 B'
   const k = 1024
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
@@ -178,87 +182,106 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
 }
+
 .page-title {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   font-size: 24px;
   color: var(--text-primary);
 }
+
 .stat-label-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-top: 4px;
 }
+
 .clear-link-btn {
   padding: 0 !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   height: auto !important;
 }
+
 .section-title {
-  margin: 32px 0 16px;
-  font-size: 18px;
+  margin: 28px 0 14px;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--text-secondary);
 }
+
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
 }
+
 .stat-card {
-  border: none !important;
+  border: 1px solid var(--border-color) !important;
   background: var(--bg-card) !important;
+  border-radius: var(--radius-md) !important;
 }
+
 .stat-content {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 14px;
 }
+
 .stat-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 28px;
+  font-size: 24px;
+  flex-shrink: 0;
 }
+
 .configs-icon {
-  background: rgba(56, 189, 248, 0.1);
+  background: rgba(56, 189, 248, 0.12);
   color: #38bdf8;
 }
+
 .clients-icon {
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(16, 185, 129, 0.12);
   color: #10b981;
 }
+
 .db-icon {
-  background: rgba(245, 158, 11, 0.1);
+  background: rgba(245, 158, 11, 0.12);
   color: #f59e0b;
 }
+
 .storage-icon {
-  background: rgba(129, 140, 248, 0.1);
+  background: rgba(129, 140, 248, 0.12);
   color: #818cf8;
 }
+
 .stat-info {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
+
 .stat-value {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
 }
+
 .stat-label {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text-secondary);
-  margin-top: 4px;
 }
 
 .actions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
 }
+
 .action-card {
   cursor: pointer;
   border: 1px solid var(--border-color) !important;
@@ -267,20 +290,66 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 30px 0;
+  padding: 22px 14px;
+  border-radius: var(--radius-md) !important;
+  -webkit-tap-highlight-color: transparent;
 }
+
 .action-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-4px);
   border-color: var(--color-primary) !important;
   box-shadow: var(--shadow-lg) !important;
 }
-.action-icon {
-  font-size: 32px;
-  color: var(--color-primary);
-  margin-bottom: 12px;
+
+.action-card:active {
+  transform: scale(0.98);
 }
+
+.action-icon {
+  font-size: 28px;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+
 .action-text {
   font-weight: 500;
+  font-size: 14px;
   color: var(--text-primary);
+}
+
+/* 移动端媒体查询适配 */
+@media (max-width: 640px) {
+  .page-title {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .stat-card {
+    padding: 2px;
+  }
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+  .stat-value {
+    font-size: 18px;
+  }
+  .actions-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .action-card {
+    padding: 16px 8px;
+  }
+  .action-icon {
+    font-size: 24px;
+  }
+  .action-text {
+    font-size: 12px;
+  }
 }
 </style>

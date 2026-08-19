@@ -5,9 +5,10 @@
     - 管理员编辑 Clash/Node 配置文件内容的页面
     - 使用 CodeMirror 6 (YamlEditor 组件) 实现高效 YAML 编辑
     - 支持保存、返回列表、实时状态反馈与错误捕获
+    - 针对移动端屏幕优化头部操作栏排列与编辑器高度自适应
   
   接口调用说明：
-    - GET /api/configs/{id} (getConfigDetail): 获取配置的基础元数据（如名称、大小等）
+    - GET /api/configs/{id} (getConfigDetail): 获取配置的基础元数据
     - GET /api/configs/{id}/content (getContent): 获取配置文件的完整文本内容
     - PUT /api/configs/{id}/content (updateContent): 将修改后的 YAML 文本写回服务器
 -->
@@ -16,11 +17,13 @@
     <!-- 头部操作栏：返回按钮、配置标题与保存按钮 -->
     <div class="editor-header">
       <div class="header-left">
-        <el-button @click="goBack" :icon="Back" plain>返回</el-button>
-        <h2 class="page-title">编辑配置: {{ configName || '加载中...' }}</h2>
+        <el-button @click="goBack" :icon="Back" plain size="small">返回</el-button>
+        <h2 class="page-title" :title="configName">
+          编辑: {{ configName || '加载中...' }}
+        </h2>
       </div>
       <div class="header-right">
-        <el-button type="primary" @click="handleSave" :loading="saving" :icon="Check">
+        <el-button type="primary" @click="handleSave" :loading="saving" :icon="Check" size="small">
           保存修改
         </el-button>
       </div>
@@ -41,6 +44,9 @@
 </template>
 
 <script setup>
+/**
+ * 引入依赖与 API
+ */
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getConfigDetail, getContent, updateContent } from '../../api/configs'
@@ -63,11 +69,6 @@ const loadFailed = ref(false)
 
 /**
  * 加载配置元数据及文本内容
- * 
- * 步骤：
- * 1. 调用 getConfigDetail(configId) 获取配置名称
- * 2. 调用 getContent(configId) 获取文本内容
- * 3. 赋值给 yamlContent 供编辑器展示
  */
 const loadData = async () => {
   loading.value = true
@@ -89,11 +90,6 @@ const loadData = async () => {
 
 /**
  * 保存配置文件内容
- * 
- * 步骤：
- * 1. 触发保存 loading 状态
- * 2. 调用 updateContent(configId, content) 发送 PUT 请求
- * 3. 提示成功或捕获异常并反馈
  */
 const handleSave = async () => {
   saving.value = true
@@ -131,20 +127,26 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  gap: 10px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
 }
 
 .page-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .editor-content {
@@ -154,6 +156,7 @@ onMounted(() => {
   border-radius: var(--radius-md);
   overflow: hidden;
   position: relative;
+  border: 1px solid var(--border-color);
 }
 
 .error-container {
@@ -162,5 +165,10 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
 }
-</style>
 
+@media (max-width: 600px) {
+  .page-title {
+    font-size: 15px;
+  }
+}
+</style>

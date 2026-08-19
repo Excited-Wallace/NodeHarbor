@@ -6,12 +6,12 @@
     - 针对开启了定时更新的配置，展示醒目的“⚡ 定时更新: 每日 04:00”或“⚡ 定时更新: 每 12 小时”状态徽章与悬浮详情
     - 管理员视角下展示“公开”或“私有”可见性状态
     - 保证所有内容在卡片内部完整呈现，无文字截断、无任何左右水平滑动条
-    - 提供响应式操作按钮组：
+    - 提供响应式操作按钮组（移动端与桌面端触控自适应）：
       - 普通用户：查看内容（在线弹窗预览）、复制链接（一键复制订阅URL）、下载（下载 .yaml 文件）
       - 管理员：编辑（在线代码编辑器）、删除（安全确认弹窗）
   
   Props 参数说明：
-    - config: Object, 配置文件对象 { id, name, description, file_size, is_public, auto_update, update_interval_type, update_time, last_auto_update_at, last_auto_update_status, created_at, updated_at }
+    - config: Object, 配置文件对象
     - showActions: Boolean, 是否为管理员管理模式（默认为 false）
   
   Events 事件说明：
@@ -84,10 +84,10 @@
       </p>
     </div>
     
-    <!-- 卡片底部：时间元数据（精确到小时分钟）与整齐对齐的操作按钮组 -->
+    <!-- 卡片底部：时间元数据与整齐对齐的操作按钮组 -->
     <div class="card-footer">
       <div class="footer-meta">
-        <span class="upload-time">更新时间: {{ formatDate(config.updated_at || config.created_at) }}</span>
+        <span class="upload-time">更新: {{ formatDate(config.updated_at || config.created_at) }}</span>
       </div>
       
       <!-- 操作按钮网格：全宽自适应排列，绝无左右横向滚动条 -->
@@ -124,7 +124,7 @@
             :icon="View"
             class="action-btn"
           >
-            查看内容
+            查看
           </el-button>
           <el-button 
             type="success" 
@@ -153,6 +153,9 @@
 </template>
 
 <script setup>
+/**
+ * 引入图标与 API
+ */
 import { Edit, Delete, Download, Link, View, Timer } from '@element-plus/icons-vue'
 import { downloadConfig } from '../../api/configs'
 import { ElMessage } from 'element-plus'
@@ -179,7 +182,7 @@ const emit = defineEmits(['edit', 'delete', 'view'])
  */
 const formatScheduleBadge = (cfg) => {
   if (cfg.update_interval_type === 'interval') {
-    return `定时: 每 ${cfg.update_time || '12'} 小时`
+    return `定时: 每 ${cfg.update_time || '12'}h`
   }
   return `定时: 每日 ${cfg.update_time || '04:00'}`
 }
@@ -282,10 +285,11 @@ const copySubLink = () => {
   transition: all var(--transition-normal);
   border: 1px solid var(--border-color);
   background: var(--bg-card);
+  border-radius: var(--radius-md);
 }
 
 .config-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   border-color: var(--color-primary);
   box-shadow: var(--shadow-md);
 }
@@ -294,7 +298,7 @@ const copySubLink = () => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 18px;
+  padding: 16px;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -304,8 +308,8 @@ const copySubLink = () => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 10px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -325,7 +329,7 @@ const copySubLink = () => {
 
 .config-name {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1.4;
@@ -350,8 +354,8 @@ const copySubLink = () => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
 .auto-update-tag {
@@ -379,7 +383,7 @@ const copySubLink = () => {
 /* 主体描述样式：完整展示并自适应折行 */
 .config-body {
   flex: 1;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   min-width: 0;
 }
 
@@ -387,7 +391,7 @@ const copySubLink = () => {
   margin: 0;
   font-size: 13px;
   color: var(--text-secondary);
-  line-height: 1.6;
+  line-height: 1.5;
   word-break: break-word;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
@@ -397,9 +401,9 @@ const copySubLink = () => {
 .card-footer {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   margin-top: auto;
-  padding-top: 14px;
+  padding-top: 12px;
   border-top: 1px solid var(--border-color);
   width: 100%;
   box-sizing: border-box;
@@ -413,7 +417,7 @@ const copySubLink = () => {
 }
 
 .upload-time {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -421,7 +425,7 @@ const copySubLink = () => {
 .action-grid {
   display: grid;
   width: 100%;
-  gap: 8px;
+  gap: 6px;
   box-sizing: border-box;
 }
 
@@ -440,5 +444,6 @@ const copySubLink = () => {
   font-size: 12px !important;
   justify-content: center;
   box-sizing: border-box;
+  height: 28px;
 }
 </style>

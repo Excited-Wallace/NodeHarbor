@@ -5,9 +5,8 @@
     展示系统支持的 4 款主流代理客户端卡片（v2rayN、v2rayNG、Clash Verge、Clash Meta for Android）。
     - 管理员 (admin) 视角：展示顶部服务器安装包缓存用量仪表盘（512MB 限制、1 小时过期策略）；
     - 普通用户 (user) 视角：隐藏服务器底层缓存细节，保持界面极简、清爽，专注客户端下载。
-    用户点击任意卡片即可弹出 Release 资产选择器，实现版本筛选与服务端中转高速下载。
+    - 针对移动端屏幕全面优化单列网格布局、缓存小部件全宽与触控交互。
 -->
-
 <template>
   <div class="clients-view-container">
     <!-- 页面顶栏：标题与服务端缓存容量状态条 -->
@@ -15,7 +14,7 @@
       <div class="header-titles">
         <h2 class="main-title">软件下载中心</h2>
         <p class="sub-title">
-          聚合 4 款主流开源代理客户端，点击卡片自动拉取 GitHub 最新 Release 版本并由服务端中转缓存分发。
+          聚合主流开源代理客户端，点击卡片自动拉取最新 Release 版本并由服务端中转缓存分发。
         </p>
       </div>
 
@@ -25,7 +24,7 @@
           <div class="widget-title">
             <span class="server-dot"></span>
             <span>服务器缓存容量</span>
-            <!-- 一键清除缓存按钮 (紧贴在服务器缓存容量旁边) -->
+            <!-- 一键清除缓存按钮 -->
             <el-tooltip content="一键清空服务端所有已缓存的安装包物理文件以释放空间" placement="top">
               <el-button
                 size="small"
@@ -36,7 +35,7 @@
                 :loading="clearingCache"
                 @click="handleClearCache"
               >
-                一键清除缓存
+                一键清除
               </el-button>
             </el-tooltip>
           </div>
@@ -52,7 +51,7 @@
         </div>
 
         <div class="widget-footer">
-          <span class="footer-tip">⏱️ 文件有效缓存 1 小时 · 超 512MB 自动清理</span>
+          <span class="footer-tip">有效缓存 1h · 超 512MB 自动清理</span>
           <span class="footer-count">{{ cacheStatus.cached_files_count }} 个已缓存安装包</span>
         </div>
       </div>
@@ -79,7 +78,7 @@
 
 <script setup>
 /**
- * 业务逻辑
+ * 业务逻辑与 API
  */
 import { ref, onMounted } from 'vue'
 import { getClients, getCacheStatus, clearAllCache } from '../api/clients'
@@ -135,7 +134,7 @@ const loadCacheStatus = async () => {
 const handleClearCache = async () => {
   try {
     await ElMessageBox.confirm(
-      '确定要一键清空服务端所有已缓存的客户端安装包及临时文件吗？\n清空后将释放全部占用空间，后续用户下载时将重新触发服务端中转流式下载。',
+      '确定要一键清空服务端所有已缓存的客户端安装包及临时文件吗？\n清空后将释放全部占用空间。',
       '清空服务端缓存',
       {
         confirmButtonText: '确定清空',
@@ -161,8 +160,6 @@ const handleClearCache = async () => {
 
 /**
  * 打开 Release 资产选择下载弹窗
- * 
- * @param {Object} client - 选中的客户端对象
  */
 const openReleaseModal = (client) => {
   selectedClient.value = client
@@ -191,7 +188,7 @@ onMounted(() => {
 .clients-view-container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 8px 0 40px;
+  padding: 4px 0 24px;
 }
 
 /* 顶栏头部 */
@@ -199,19 +196,19 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 24px;
-  margin-bottom: 36px;
+  gap: 20px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
 .header-titles {
   flex: 1;
-  min-width: 320px;
+  min-width: 260px;
 }
 
 .main-title {
-  margin: 0 0 10px;
-  font-size: 26px;
+  margin: 0 0 8px;
+  font-size: 24px;
   font-weight: 800;
   color: #ffffff;
   letter-spacing: -0.5px;
@@ -220,7 +217,7 @@ onMounted(() => {
 .sub-title {
   margin: 0;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.5;
   color: #94a3b8;
   max-width: 600px;
 }
@@ -229,23 +226,24 @@ onMounted(() => {
 .cache-status-widget {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  padding: 16px 20px;
-  min-width: 340px;
+  border-radius: 12px;
+  padding: 14px 18px;
+  min-width: 320px;
   backdrop-filter: blur(8px);
+  box-sizing: border-box;
 }
 
 .widget-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .widget-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 13px;
   font-weight: 600;
   color: #e2e8f0;
@@ -269,7 +267,7 @@ onMounted(() => {
 }
 
 .widget-usage {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #818cf8;
   font-family: monospace;
@@ -280,7 +278,7 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.08);
   border-radius: 4px;
   overflow: hidden;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .progress-fill {
@@ -311,20 +309,27 @@ onMounted(() => {
   font-weight: 500;
 }
 
-/* 4 卡片网格布局 */
+/* 客户端卡片网格布局 */
 .clients-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 20px;
 }
 
 @media (max-width: 768px) {
   .clients-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
   
   .page-top-header {
     flex-direction: column;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .main-title {
+    font-size: 20px;
   }
   
   .cache-status-widget {

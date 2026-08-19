@@ -4,23 +4,14 @@
   文件作用：
     用于在客户端下载页面展示单个代理客户端的概览信息卡片，包括名称、专属图标、
     支持平台、特色标签、描述简介、GitHub 仓库链接以及“选择版本与下载”操作入口。
+    针对移动端进行紧凑内边距与触控按钮布局优化。
 
   Props 属性：
-    - client: 客户端元数据对象 {
-        client_id: string,
-        name: string,
-        repo: string,
-        description: string,
-        platforms: string[],
-        badge: string,
-        github_url: string,
-        cached_version: string | null
-      }
-
+    - client: 客户端元数据对象
+  
   Emits 事件：
     - @select: 当用户点击卡片或“选择版本下载”按钮时触发，传递 client 对象
 -->
-
 <template>
   <div class="client-card-wrapper" :class="`client-theme-${client.client_id}`" @click="$emit('select', client)">
     <!-- 卡片顶部背景光晕 -->
@@ -82,7 +73,7 @@
           class="github-link"
           title="在 GitHub 查看 Releases"
         >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
             <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
           </svg>
           <span>GitHub</span>
@@ -90,7 +81,7 @@
 
         <button class="select-btn" @click="$emit('select', client)">
           <span>选择版本 & 下载</span>
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M5 12h14M12 5l7 7-7 7" />
           </svg>
         </button>
@@ -112,9 +103,6 @@ defineProps({
   }
 })
 
-/**
- * 声明组件向外抛出的事件
- */
 defineEmits(['select'])
 
 const authStore = useAuthStore()
@@ -144,7 +132,7 @@ const authStore = useAuthStore()
   top: 0;
   left: 0;
   right: 0;
-  height: 120px;
+  height: 100px;
   background: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15), transparent 70%);
   pointer-events: none;
   transition: opacity 0.35s ease;
@@ -158,22 +146,23 @@ const authStore = useAuthStore()
 .card-content {
   position: relative;
   z-index: 1;
-  padding: 24px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   height: 100%;
+  box-sizing: border-box;
 }
 
 .card-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 
 .icon-box {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   background: rgba(99, 102, 241, 0.1);
   border: 1px solid rgba(99, 102, 241, 0.25);
@@ -192,8 +181,8 @@ const authStore = useAuthStore()
 }
 
 .client-icon {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
 }
 
 .header-text {
@@ -210,7 +199,7 @@ const authStore = useAuthStore()
 
 .client-name {
   margin: 0;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   color: #ffffff;
   letter-spacing: -0.2px;
@@ -238,25 +227,25 @@ const authStore = useAuthStore()
 
 .client-desc {
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.5;
   color: #cbd5e1;
-  margin: 0 0 20px;
+  margin: 0 0 16px;
   flex: 1;
 }
 
 .platform-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 6px;
+  margin-bottom: 16px;
 }
 
 .platform-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  padding: 4px 10px;
+  font-size: 11px;
+  padding: 3px 8px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -264,15 +253,15 @@ const authStore = useAuthStore()
 }
 
 .platform-pill .dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: #10b981;
 }
 
 .cached-pill {
-  font-size: 12px;
-  padding: 4px 10px;
+  font-size: 11px;
+  padding: 3px 8px;
   border-radius: 6px;
   background: rgba(16, 185, 129, 0.15);
   border: 1px solid rgba(16, 185, 129, 0.3);
@@ -284,8 +273,8 @@ const authStore = useAuthStore()
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding-top: 16px;
+  gap: 10px;
+  padding-top: 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -293,10 +282,10 @@ const authStore = useAuthStore()
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 12px;
   color: #94a3b8;
   text-decoration: none;
-  padding: 6px 12px;
+  padding: 6px 10px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   transition: all 0.2s ease;
@@ -311,20 +300,27 @@ const authStore = useAuthStore()
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
+  padding: 7px 14px;
   border-radius: 8px;
   border: none;
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: #ffffff;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .select-btn:hover {
   background: linear-gradient(135deg, #7c7ffa 0%, #6366f1 100%);
   transform: translateX(2px);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+@media (max-width: 480px) {
+  .card-content {
+    padding: 16px;
+  }
 }
 </style>

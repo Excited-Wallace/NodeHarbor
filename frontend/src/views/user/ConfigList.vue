@@ -3,10 +3,10 @@
   
   文件功能说明：
     - 展示所有可用的代理配置文件（卡片网格自适应布局）
-    - 保证每个卡片内容完整呈现，自适应换行，绝无左右横向滑动条
+    - 移动端下自适应为单列流动卡片，完全消除横向溢出
     - 提供配置文件快速下载与一键复制订阅链接功能
     - 提供在线查看配置/订阅详情弹窗（基于 CodeMirror YamlEditor 组件）
-    - 弹窗内支持语法高亮预览、订阅链接复制、全文 YAML 内容复制、直接下载等交互
+    - 针对移动端优化弹窗全宽响应式、订阅栏折行与代码预览区高度自适应
   
   接口调用说明：
     - configStore.fetchConfigs(): GET /api/configs 获取配置列表
@@ -39,12 +39,12 @@
       <el-empty description="暂无可用配置文件" />
     </div>
 
-    <!-- 订阅配置内容预览弹窗 -->
+    <!-- 订阅配置内容预览弹窗（移动端响应式全宽自适应） -->
     <el-dialog
       v-model="previewDialog.visible"
       :title="`订阅配置详情 - ${previewDialog.config?.name || ''}`"
-      width="850px"
-      top="6vh"
+      :width="deviceStore.isMobile ? '95%' : '850px'"
+      :top="deviceStore.isMobile ? '2vh' : '6vh'"
       class="config-preview-dialog"
       :destroy-on-close="true"
     >
@@ -92,7 +92,12 @@
         </div>
 
         <!-- 中间 YAML 内容编辑器展示区（只读模式） -->
-        <div class="yaml-viewer-wrapper" v-loading="previewDialog.loading" element-loading-text="正在加载配置内容...">
+        <div 
+          class="yaml-viewer-wrapper" 
+          :class="{ 'mobile-viewer': deviceStore.isMobile }"
+          v-loading="previewDialog.loading" 
+          element-loading-text="正在加载配置内容..."
+        >
           <YamlEditor
             v-if="!previewDialog.loading && !previewDialog.error"
             :model-value="previewDialog.content"
@@ -122,16 +127,21 @@
 </template>
 
 <script setup>
+/**
+ * 引入依赖与 Store
+ */
 import { reactive, onMounted } from 'vue'
 import { useConfigStore } from '../../stores/config'
+import { useDeviceStore } from '../../stores/device'
 import { getContent, downloadConfig } from '../../api/configs'
 import ConfigCard from '../../components/config/ConfigCard.vue'
 import YamlEditor from '../../components/config/YamlEditor.vue'
 import { ElMessage } from 'element-plus'
 import { Link, DocumentCopy, Download } from '@element-plus/icons-vue'
 
-// 配置仓库实例
+// 状态 Store 实例
 const configStore = useConfigStore()
+const deviceStore = useDeviceStore()
 
 // 预览弹窗响应式状态
 const previewDialog = reactive({
@@ -282,11 +292,11 @@ onMounted(() => {
 }
 
 .page-header {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .page-title {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   font-size: 24px;
   color: var(--text-primary);
 }
@@ -300,7 +310,7 @@ onMounted(() => {
 .configs-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  gap: 18px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -313,14 +323,14 @@ onMounted(() => {
 .dialog-inner {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .sub-info-bar {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 10px;
+  padding: 12px 14px;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
@@ -330,7 +340,7 @@ onMounted(() => {
 .sub-link-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .sub-link-label {
@@ -359,7 +369,8 @@ onMounted(() => {
 
 .meta-tags {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .quick-actions {
@@ -368,11 +379,15 @@ onMounted(() => {
 }
 
 .yaml-viewer-wrapper {
-  height: 480px;
+  height: 460px;
   background: var(--bg-primary);
   border-radius: var(--radius-sm);
   overflow: hidden;
   position: relative;
+}
+
+.yaml-viewer-wrapper.mobile-viewer {
+  height: 320px;
 }
 
 .error-container {
@@ -392,21 +407,47 @@ onMounted(() => {
 :deep(.config-preview-dialog .el-dialog__header) {
   margin-right: 0;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 16px;
+  padding-bottom: 14px;
 }
 
 :deep(.config-preview-dialog .el-dialog__title) {
   color: var(--text-primary);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
 }
 
 :deep(.config-preview-dialog .el-dialog__body) {
-  padding: 20px;
+  padding: 16px;
 }
 
 :deep(.config-preview-dialog .el-dialog__footer) {
   border-top: 1px solid var(--border-color);
-  padding-top: 16px;
+  padding-top: 14px;
+}
+
+/* 移动端媒体查询适配 */
+@media (max-width: 640px) {
+  .configs-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .page-title {
+    font-size: 20px;
+  }
+  .sub-link-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .sub-link-input {
+    width: 100%;
+  }
+  .meta-and-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .quick-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 </style>

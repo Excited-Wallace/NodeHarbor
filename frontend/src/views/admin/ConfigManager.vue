@@ -4,29 +4,29 @@
   页面作用：
     - 展示所有已上传的 Clash/代理配置文件列表（包含普通用户可见性、定时更新策略及状态）
     - 快速切换配置对普通用户的可见性 (is_public Switch 开关实时生效)
-    - 支持新建/上传配置文件：
-      1. 本地 YAML 文件上传
-      2. 订阅链接拉取（支持直接配置可选定时自动更新并设置时间）
-      3. 粘贴 YAML 文本内容
-    - 提供订阅配置的“立即同步”功能（一键拉取最新节点覆盖本地）
-    - 提供“定时设置”弹窗（随时修改已有配置的定时更新策略与时间）
-    - 提供进入在线代码编辑 (ConfigEditor) 和删除配置的功能
+    - 针对移动端深度优化：
+      - 移动端模式下自动采用触控友好的卡片流布局 (Mobile Cards)
+      - 桌面端模式下保留完整的高密度管理表格 (Desktop Table)
+    - 支持新建/上传配置文件（文件上传、订阅链接、粘贴 YAML）
+    - 提供订阅配置的“立即同步”与“定时设置”调度策略修改
+    - 提供进入在线代码编辑 (ConfigEditor) 和删除配置功能
 -->
 <template>
   <div class="manager-container">
     <!-- 顶部操作栏 -->
     <div class="header-actions">
-      <div>
+      <div class="header-titles">
         <h2 class="page-title">配置管理</h2>
         <p class="page-subtitle">管理所有代理订阅配置文件、普通用户可见性与定时自动同步调度策略。</p>
       </div>
-      <el-button type="primary" @click="openUploadDialog" :icon="Upload">
+      <el-button type="primary" @click="openUploadDialog" :icon="Upload" class="upload-top-btn">
         上传 / 导入配置
       </el-button>
     </div>
 
-    <!-- 配置文件表格列表 -->
+    <!-- 1. 桌面端视图：完整数据表格 (Desktop Table) -->
     <el-table
+      v-if="!deviceStore.isMobile"
       v-loading="configStore.loading"
       :data="configStore.configList"
       class="custom-table"
@@ -141,11 +141,121 @@
       </el-table-column>
     </el-table>
 
+    <!-- 2. 移动端专属视图：卡片列表流 (Mobile Card View) -->
+    <div v-else class="mobile-config-list" v-loading="configStore.loading">
+      <div v-if="configStore.configList.length === 0" class="empty-box">
+        <el-empty description="暂无配置文件" />
+      </div>
+
+      <div 
+        v-for="item in configStore.configList" 
+        :key="item.id" 
+        class="admin-config-card"
+      >
+        <!-- 卡片头部：名称与大小 -->
+        <div class="card-top-row">
+          <div class="card-title-group">
+            <h4 class="card-name">{{ item.name }}</h4>
+            <el-tag v-if="item.subscription_url" size="small" type="info" effect="plain">
+              订阅
+            </el-tag>
+          </div>
+          <span class="card-size">{{ formatSize(item.file_size) }}</span>
+        </div>
+
+        <!-- 描述（若有） -->
+        <p class="card-desc" v-if="item.description">{{ item.description }}</p>
+
+        <!-- 属性与开关行 -->
+        <div class="card-props-row">
+          <div class="prop-item">
+            <span class="prop-label">用户可见:</span>
+            <el-switch
+              :model-value="item.is_public"
+              :loading="item._switchingVisibility"
+              size="small"
+              inline-prompt
+              active-text="公开"
+              inactive-text="隐藏"
+              @change="(val) => handleToggleVisibility(item, val)"
+            />
+          </div>
+
+          <!-- 定时更新状态 -->
+          <div class="prop-item">
+            <el-tag 
+              v-if="item.auto_update" 
+              type="warning" 
+              size="small" 
+              effect="light"
+              class="mobile-schedule-tag"
+            >
+              <el-icon><Timer /></el-icon>
+              <span>{{ formatScheduleText(item) }}</span>
+            </el-tag>
+            <span v-else class="no-schedule-tip">未开启定时</span>
+          </div>
+        </div>
+
+        <!-- 卡片底部时间与操作按钮 -->
+        <div class="card-bottom-row">
+          <span class="card-date">{{ formatDate(item.updated_at || item.created_at) }}</span>
+          
+          <div class="card-actions">
+            <template v-if="item.subscription_url">
+              <el-button 
+                type="success" 
+                size="small" 
+                plain
+                :icon="Refresh" 
+                :loading="item._syncing" 
+                @click="handleSyncNow(item)"
+                class="mobile-action-btn"
+              >
+                同步
+              </el-button>
+              <el-button 
+                type="warning" 
+                size="small" 
+                plain
+                :icon="Timer" 
+                @click="openScheduleDialog(item)"
+                class="mobile-action-btn"
+              >
+                定时
+              </el-button>
+            </template>
+            
+            <el-button 
+              type="primary" 
+              size="small" 
+              plain
+              @click="editConfig(item.id)" 
+              :icon="Edit"
+              class="mobile-action-btn"
+            >
+              编辑
+            </el-button>
+            <el-button 
+              type="danger" 
+              size="small" 
+              plain 
+              @click="confirmDelete(item)" 
+              :icon="Delete"
+              class="mobile-action-btn"
+            >
+              删除
+            </el-button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 1. 上传/导入配置弹窗 -->
     <el-dialog
       v-model="showUploadDialog"
       title="上传 / 导入配置文件"
-      width="560px"
+      :width="deviceStore.isMobile ? '95%' : '560px'"
       class="custom-dialog"
       :destroy-on-close="true"
     >
@@ -171,7 +281,7 @@
         </el-form-item>
 
         <el-form-item label="导入方式">
-          <el-radio-group v-model="uploadForm.method">
+          <el-radio-group v-model="uploadForm.method" :size="deviceStore.isMobile ? 'small' : 'default'">
             <el-radio-button value="file">文件上传</el-radio-button>
             <el-radio-button value="url">订阅链接</el-radio-button>
             <el-radio-button value="content">粘贴 YAML</el-radio-button>
@@ -257,7 +367,7 @@
 
         <!-- 方式 3: 直接粘贴 YAML 内容 -->
         <el-form-item v-if="uploadForm.method === 'content'" label="YAML 内容" required>
-          <el-input v-model="uploadForm.content" type="textarea" :rows="8" placeholder="请在此粘贴 YAML 配置内容..." style="font-family: monospace;" />
+          <el-input v-model="uploadForm.content" type="textarea" :rows="6" placeholder="请在此粘贴 YAML 配置内容..." style="font-family: monospace;" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -274,7 +384,7 @@
     <el-dialog
       v-model="scheduleDialog.visible"
       :title="`定时更新设置 - ${scheduleDialog.config?.name || ''}`"
-      width="520px"
+      :width="deviceStore.isMobile ? '95%' : '520px'"
       class="custom-dialog"
     >
       <el-form :model="scheduleDialog.form" label-position="top">
@@ -347,9 +457,13 @@
 </template>
 
 <script setup>
+/**
+ * 引入依赖与 API
+ */
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConfigStore } from '../../stores/config'
+import { useDeviceStore } from '../../stores/device'
 import { 
   uploadConfig, 
   updateConfigVisibility, 
@@ -362,6 +476,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog.vue'
 
 const router = useRouter()
 const configStore = useConfigStore()
+const deviceStore = useDeviceStore()
 
 // 上传弹窗状态
 const showUploadDialog = ref(false)
@@ -448,15 +563,12 @@ const submitUpload = async () => {
   try {
     const formData = new FormData()
     formData.append('name', uploadForm.name)
-    if (uploadForm.description) {
-      formData.append('description', uploadForm.description)
-    }
-    formData.append('is_public', uploadForm.is_public ? 'true' : 'false')
-    formData.append('method', uploadForm.method)
+    formData.append('description', uploadForm.description || '')
+    formData.append('is_public', String(uploadForm.is_public))
     
     if (uploadForm.method === 'file') {
       if (!selectedFile.value) {
-        ElMessage.warning('请选择要上传的 YAML 文件')
+        ElMessage.warning('请选择一个 YAML 文件')
         uploading.value = false
         return
       }
@@ -468,9 +580,11 @@ const submitUpload = async () => {
         return
       }
       formData.append('url', uploadForm.url)
-      formData.append('auto_update', uploadForm.auto_update ? 'true' : 'false')
-      formData.append('update_interval_type', uploadForm.update_interval_type)
-      formData.append('update_time', uploadForm.update_time || '04:00')
+      formData.append('auto_update', String(uploadForm.auto_update))
+      if (uploadForm.auto_update) {
+        formData.append('update_interval_type', uploadForm.update_interval_type)
+        formData.append('update_time', uploadForm.update_time)
+      }
     } else if (uploadForm.method === 'content') {
       if (!uploadForm.content) {
         ElMessage.warning('请输入 YAML 内容')
@@ -483,126 +597,121 @@ const submitUpload = async () => {
     await uploadConfig(formData)
     ElMessage.success('配置添加成功')
     showUploadDialog.value = false
-    
-    // 重新拉取最新列表
-    configStore.fetchConfigs()
+    await configStore.fetchConfigs()
   } catch (error) {
-    ElMessage.error(error.response?.data?.detail || '添加失败')
+    ElMessage.error(error.response?.data?.detail || '添加配置失败')
   } finally {
     uploading.value = false
   }
 }
 
 /**
- * 快速切换配置对普通用户的可见性
+ * 管理员一键切换普通用户可见性
  * @param {Object} row 配置项
- * @param {boolean} val 新的可见性状态
+ * @param {boolean} newVal 新可见性值
  */
-const handleToggleVisibility = async (row, val) => {
+const handleToggleVisibility = async (row, newVal) => {
   row._switchingVisibility = true
   try {
-    await updateConfigVisibility(row.id, val)
-    row.is_public = val
-    ElMessage.success(`已设置为${val ? '【普通用户可见】' : '【仅管理员可见】'}`)
-  } catch (err) {
-    ElMessage.error(err.response?.data?.detail || '修改可见性失败')
+    const res = await updateConfigVisibility(row.id, newVal)
+    row.is_public = res.data?.is_public ?? newVal
+    ElMessage.success(row.is_public ? `已设置【${row.name}】为公开可见` : `已设置【${row.name}】为隐藏（仅管理可见）`)
+  } catch (error) {
+    ElMessage.error('修改可见性失败，请重试')
+    console.error('Failed to toggle visibility:', error)
   } finally {
     row._switchingVisibility = false
   }
 }
 
 /**
- * 手动立即从订阅源同步更新配置
+ * 打开定时自动同步策略设置对话框
  * @param {Object} row 配置项
  */
-const handleSyncNow = async (row) => {
-  row._syncing = true
-  try {
-    const res = await syncConfig(row.id)
-    ElMessage.success(`配置“${row.name}”已成功从订阅源同步最新内容`)
-    // 更新本地行数据
-    Object.assign(row, res.data)
-  } catch (err) {
-    ElMessage.error(err.response?.data?.detail || '同步失败，请检查订阅链接是否有效')
-  } finally {
-    row._syncing = false
-  }
-}
-
-/**
- * 打开定时更新设置对话框
- * @param {Object} config 配置对象
- */
-const openScheduleDialog = (config) => {
-  scheduleDialog.config = config
-  scheduleDialog.form.auto_update = Boolean(config.auto_update)
-  scheduleDialog.form.subscription_url = config.subscription_url || ''
-  scheduleDialog.form.update_interval_type = config.update_interval_type || 'daily'
-  scheduleDialog.form.update_time = config.update_time || '04:00'
+const openScheduleDialog = (row) => {
+  scheduleDialog.config = row
+  scheduleDialog.form.auto_update = Boolean(row.auto_update)
+  scheduleDialog.form.subscription_url = row.subscription_url || ''
+  scheduleDialog.form.update_interval_type = row.update_interval_type || 'daily'
+  scheduleDialog.form.update_time = row.update_time || '04:00'
   scheduleDialog.visible = true
 }
 
 /**
- * 提交修改定时更新设置
+ * 提交修改定时自动同步设置
  */
 const submitScheduleUpdate = async () => {
   if (!scheduleDialog.config) return
-  
-  if (scheduleDialog.form.auto_update && !scheduleDialog.form.subscription_url) {
-    ElMessage.warning('开启定时更新必须填写订阅链接')
+  if (!scheduleDialog.form.subscription_url) {
+    ElMessage.warning('订阅链接不能为空')
     return
   }
-  
+
   scheduleDialog.submitting = true
   try {
-    const res = await updateConfigSchedule(scheduleDialog.config.id, {
+    const payload = {
       auto_update: scheduleDialog.form.auto_update,
       subscription_url: scheduleDialog.form.subscription_url,
       update_interval_type: scheduleDialog.form.update_interval_type,
       update_time: scheduleDialog.form.update_time
-    })
-    
-    ElMessage.success('定时更新设置已保存')
+    }
+    await updateConfigSchedule(scheduleDialog.config.id, payload)
+    ElMessage.success('定时自动更新配置已保存')
     scheduleDialog.visible = false
-    // 更新该项
-    Object.assign(scheduleDialog.config, res.data)
-    configStore.fetchConfigs()
-  } catch (err) {
-    ElMessage.error(err.response?.data?.detail || '保存定时设置失败')
+    await configStore.fetchConfigs()
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '保存定时设置失败')
   } finally {
     scheduleDialog.submitting = false
   }
 }
 
 /**
- * 格式化定时更新徽章文本
+ * 管理员一键立即从原订阅链接同步最新内容
+ * @param {Object} row 配置项
+ */
+const handleSyncNow = async (row) => {
+  row._syncing = true
+  try {
+    const res = await syncConfig(row.id)
+    ElMessage.success(res.data?.message || '同步完成')
+    await configStore.fetchConfigs()
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '立即同步失败，请检查原订阅地址是否可达')
+  } finally {
+    row._syncing = false
+  }
+}
+
+/**
+ * 格式化定时更新提示简写
  */
 const formatScheduleText = (row) => {
   if (row.update_interval_type === 'interval') {
-    return `每 ${row.update_time || '12'} 小时`
+    return `每 ${row.update_time || 12}h`
   }
   return `每日 ${row.update_time || '04:00'}`
 }
 
 /**
- * 格式化定时更新浮窗提示
+ * 格式化定时更新悬浮详细说明
  */
 const formatScheduleTooltip = (row) => {
   if (row.update_interval_type === 'interval') {
-    return `每隔 ${row.update_time || '12'} 小时自动更新`
+    return `每隔 ${row.update_time || 12} 小时自动从订阅源拉取更新`
   }
-  return `每天 ${row.update_time || '04:00'} (系统时间) 自动拉取更新`
+  return `每天 ${row.update_time || '04:00'} (系统时间) 自动从订阅源拉取更新`
 }
 
 /**
- * 跳转至代码编辑页
+ * 跳转编辑页面
  */
 const editConfig = (id) => {
   router.push(`/admin/configs/${id}/edit`)
 }
 
 /**
- * 弹出删除确认框
+ * 打开删除确认弹窗
  */
 const confirmDelete = (config) => {
   deleteDialog.config = config
@@ -610,12 +719,16 @@ const confirmDelete = (config) => {
 }
 
 /**
- * 确认删除执行逻辑
+ * 执行删除配置
  */
 const handleDelete = async () => {
-  if (deleteDialog.config) {
-    await configStore.deleteConfig(deleteDialog.config.id)
+  if (!deleteDialog.config) return
+  try {
+    await configStore.removeConfig(deleteDialog.config.id)
+    ElMessage.success('配置已删除')
     deleteDialog.visible = false
+  } catch (error) {
+    ElMessage.error('删除配置失败')
   }
 }
 
@@ -631,7 +744,7 @@ const formatSize = (bytes) => {
 }
 
 /**
- * 格式化日期时间 (YYYY-MM-DD HH:mm)
+ * 格式化日期时间
  */
 const formatDate = (dateString) => {
   if (!dateString) return '未知时间'
@@ -658,157 +771,272 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
 }
+
 .header-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
+
+.header-titles {
+  flex: 1;
+  min-width: 240px;
+}
+
 .page-title {
   margin: 0 0 6px;
   font-size: 24px;
   color: var(--text-primary);
 }
+
 .page-subtitle {
   margin: 0;
   font-size: 14px;
   color: var(--text-secondary);
 }
 
+/* 桌面端表格样式 */
 .custom-table {
+  background: var(--bg-card);
   border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  background: var(--bg-card) !important;
 }
 
 :deep(.el-table) {
-  --el-table-border-color: var(--border-color);
-  --el-table-header-bg-color: rgba(0, 0, 0, 0.2);
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: rgba(255, 255, 255, 0.02);
   --el-table-header-text-color: var(--text-secondary);
-  --el-table-text-color: var(--text-primary);
   --el-table-row-hover-bg-color: var(--bg-hover);
-  background-color: transparent !important;
-}
-:deep(.el-table th.el-table__cell), :deep(.el-table td.el-table__cell) {
-  background-color: transparent !important;
-  border-bottom: 1px solid var(--border-color);
-}
-:deep(.el-table__empty-block) {
-  background-color: transparent !important;
-}
-:deep(.el-table__inner-wrapper::before) {
-  display: none;
+  --el-table-border-color: var(--border-color);
 }
 
 .name-cell {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
 }
+
 .config-title {
   font-weight: 600;
   color: var(--text-primary);
 }
-.sub-link-tag {
-  align-self: flex-start;
-  font-size: 11px;
-  height: 20px;
-  padding: 0 6px;
-}
 
-.schedule-cell {
+.table-actions {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
+
 .schedule-tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   cursor: help;
 }
-.schedule-tooltip-content {
-  font-size: 12px;
-  line-height: 1.6;
+
+/* 移动端卡片列表样式 (Mobile Card View) */
+.mobile-config-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.table-actions {
+.admin-config-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.card-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.card-size {
+  font-size: 12px;
+  color: var(--color-primary);
+  font-family: monospace;
+  flex-shrink: 0;
+}
+
+.card-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.card-props-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.prop-item {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.upload-area :deep(.el-upload-dragger) {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-color: var(--border-color);
-}
-.upload-area :deep(.el-upload-dragger:hover) {
-  border-color: var(--color-primary);
+.prop-label {
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
-.visibility-setting-box {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-color);
+.mobile-schedule-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
 }
-.setting-hint {
-  font-size: 12px;
+
+.no-schedule-tip {
+  font-size: 11px;
   color: var(--text-muted);
 }
 
+.card-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.card-date {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mobile-action-btn {
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  height: 26px !important;
+  margin: 0 !important;
+}
+
+/* 弹窗与表单样式 */
+.upload-area {
+  width: 100%;
+}
+
+:deep(.upload-area .el-upload-dragger) {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border: 1px dashed var(--border-color) !important;
+}
+
 .schedule-config-panel {
-  margin-top: 14px;
-  padding: 14px;
-  background: rgba(234, 179, 8, 0.05);
-  border: 1px solid rgba(234, 179, 8, 0.2);
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
 }
+
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+
 .panel-title {
-  display: inline-flex;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
   align-items: center;
   gap: 6px;
-  font-weight: 600;
-  font-size: 14px;
-  color: #eab308;
+  color: var(--color-warning);
 }
+
 .panel-body {
   margin-top: 12px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.form-row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+
 .sub-label {
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-.time-picker-input, .interval-select {
-  width: 100%;
-}
-.schedule-tip {
   font-size: 12px;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.schedule-tip {
+  font-size: 11px;
   color: var(--text-muted);
   line-height: 1.5;
-  margin-top: 4px;
 }
 
-.last-sync-info {
+.visibility-setting-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.setting-hint {
   font-size: 12px;
   color: var(--text-muted);
-  margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .page-title {
+    font-size: 20px;
+  }
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .upload-top-btn {
+    width: 100%;
+  }
+  .card-bottom-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .card-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 </style>
-

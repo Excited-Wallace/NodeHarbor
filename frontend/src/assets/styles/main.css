@@ -1,5 +1,11 @@
 /**
- * main.css - 全局样式
+ * main.css - 全局样式与响应式/移动端优化
+ * 
+ * 包含：
+ *   - 基础样式重置 (Reset & Normalize)
+ *   - Element Plus 主题定制与深色模式覆盖
+ *   - 移动端 Element Plus 对话框/提示框/表单触控响应式增强
+ *   - 路由平滑过渡动画
  */
 @import './variables.css';
 
@@ -8,6 +14,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html, body {
@@ -18,6 +25,7 @@ html, body {
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 #app {
@@ -39,8 +47,8 @@ a:hover {
 
 /* Scrollbar Customization */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -101,15 +109,50 @@ a:hover {
 .el-card {
   background: var(--bg-card) !important;
   backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid var(--border-color) !important;
   color: var(--text-primary) !important;
   border-radius: var(--radius-md) !important;
 }
 
+/* 移动端 Element Plus 对话框/提示框/Message 全局自适应优化 */
+.el-message-box {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  max-width: calc(100vw - 32px) !important;
+  width: 420px !important;
+}
+
+.el-message-box__title {
+  color: var(--text-primary) !important;
+}
+
+.el-message-box__content {
+  color: var(--text-secondary) !important;
+}
+
+.el-message {
+  max-width: calc(100vw - 32px) !important;
+  border-radius: 8px !important;
+}
+
+.custom-dialog {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.custom-dialog .el-dialog__title {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
 /* Page Transitions */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.25s ease;
 }
 
 .fade-enter-from,
@@ -118,7 +161,7 @@ a:hover {
 }
 
 .slide-fade-enter-active {
-  transition: all 0.3s ease-out;
+  transition: all 0.25s ease-out;
 }
 
 .slide-fade-leave-active {
@@ -127,6 +170,6 @@ a:hover {
 
 .slide-fade-enter-from,
 .slide-fade-leave-to {
-  transform: translateX(20px);
+  transform: translateX(16px);
   opacity: 0;
 }
