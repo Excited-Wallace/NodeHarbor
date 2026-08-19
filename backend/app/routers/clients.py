@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, require_admin
 from app.models import User
 from app.schemas import (
     ClientCardInfo,
@@ -181,3 +181,31 @@ def get_cache_status(
         已占用 MB、512MB 上限限制、占用百分比、已缓存文件总数等。
     """
     return client_service.get_cache_storage_status(db)
+
+@router.post("/cache/clear")
+def clear_cache(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    接口：管理员一键清空服务端所有客户端安装包缓存文件与临时文件
+    
+    调用方法：
+        POST /api/clients/cache/clear
+        Header: Authorization: Bearer <admin_token>
+        
+    返回：
+        {
+            "status": "success",
+            "cleared_files_count": int,
+            "freed_mb": float,
+            "cache_status": CacheStorageStatus
+        }
+    """
+    res = client_service.clear_all_cache(db)
+    return {
+        "status": "success",
+        "message": f"成功清空缓存，释放了 {res['freed_mb']} MB 磁盘空间",
+        **res
+    }
+

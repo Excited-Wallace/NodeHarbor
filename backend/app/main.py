@@ -18,10 +18,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import auth, configs, clients, system
-from app.database import engine, SessionLocal
+from app.database import engine, SessionLocal, migrate_database
 from app.models import Base
 from app.services.auth_service import init_default_users
 from app.services.client_service import background_cleanup_scheduler
+from app.services.config_service import background_config_update_scheduler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,32 +31,41 @@ async def lifespan(app: FastAPI):
     
     启动流程：
         1. 自动根据 models 创建所有尚未建立的数据库表结构；
-        2. 初始化系统默认管理员与普通用户账号；
-        3. 启动后台异步定时任务，每隔 60 秒轮询清理超过 1 小时的缓存文件并在总缓存超过 512MB 时自动清空。
+        2. 执行平滑迁移函数 (migrate_database)，自动补充新增数据列；
+        3. 初始化系统默认管理员与普通用户账号；
+        4. 启动客户端安装包缓存定时清理后台任务 (每 60 秒轮询)；
+        5. 启动订阅配置定时自动更新后台任务 (每 30 秒轮询)。
     
     关闭流程：
-        取消并等待后台定时清理任务安全退出。
+        安全取消并等待所有后台定时任务退出。
     """
     # 1. 确保所有数据库表结构已创建
     Base.metadata.create_all(bind=engine)
     
-    # 2. 初始化默认用户
+    # 2. 执行数据库字段平滑迁移
+    migrate_database(engine)
+    
+    # 3. 初始化默认用户
     db = SessionLocal()
     try:
         init_default_users(db)
     finally:
         db.close()
         
-    # 3. 启动客户端安装包缓存定时清理后台任务
+    # 4. 启动客户端安装包缓存定时清理后台任务
     cleanup_task = asyncio.create_task(background_cleanup_scheduler())
+    
+    # 5. 启动订阅配置定时自动同步更新后台任务
+    config_update_task = asyncio.create_task(background_config_update_scheduler())
     
     yield
     
     # 应用程序关闭时取消后台任务
     cleanup_task.cancel()
+    config_update_task.cancel()
     try:
-        await cleanup_task
-    except asyncio.CancelledError:
+        await asyncio.gather(cleanup_task, config_update_task, return_exceptions=True)
+    except Exception:
         pass
 
 # 实例化 FastAPI 应用

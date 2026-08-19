@@ -1,16 +1,24 @@
+<!--
+  Login.vue - 用户登录认证页面
+  
+  组件作用：
+    - 提供管理员及普通用户的账号密码登录入口
+    - 结合 Pinia AuthStore 完成 Token 与 Role 本地持久化
+    - 登录成功后根据角色自动跳转（管理员 -> /admin，普通用户 -> /）
+-->
 <template>
   <div class="login-container">
     <div class="login-box">
       <div class="login-header">
         <h2 class="title">NodeHarbor</h2>
-        <p class="subtitle">Welcome back, please login to your account.</p>
+        <p class="subtitle">欢迎回来，请登录您的账户</p>
       </div>
       
       <el-form :model="loginForm" class="login-form">
         <el-form-item>
           <el-input 
             v-model="loginForm.username" 
-            placeholder="Username" 
+            placeholder="用户名" 
             prefix-icon="User"
             size="large"
           />
@@ -19,7 +27,7 @@
           <el-input 
             v-model="loginForm.password" 
             type="password" 
-            placeholder="Password" 
+            placeholder="密码" 
             prefix-icon="Lock"
             size="large"
             show-password
@@ -28,17 +36,17 @@
         
         <el-form-item>
           <el-button type="primary" class="login-btn" size="large" :loading="loading" @click="handleLogin">
-            Sign In
+            登录
           </el-button>
         </el-form-item>
       </el-form>
       
       <div class="login-footer">
-        <p>Proxy Node Management Platform</p>
+        <p>代理节点与配置管理平台</p>
       </div>
     </div>
     
-    <!-- Background animations -->
+    <!-- 背景光效与装饰动画 -->
     <div class="bg-shape shape1"></div>
     <div class="bg-shape shape2"></div>
   </div>
@@ -55,27 +63,36 @@ const router = useRouter()
 const authStore = useAuthStore()
 const loading = ref(false)
 
+// 登录表单响应式状态
 const loginForm = reactive({
   username: '',
   password: ''
 })
 
+/**
+ * 处理用户登录提交
+ * 
+ * 流程：
+ * 1. 校验用户名与密码是否填写
+ * 2. 调用 authStore.login 发送登录请求
+ * 3. 登录成功根据角色跳转对应路由
+ */
 const handleLogin = async () => {
   if (!loginForm.username || !loginForm.password) {
-    ElMessage.warning('Please enter username and password')
+    ElMessage.warning('请输入用户名和密码')
     return
   }
   loading.value = true
   try {
     await authStore.login(loginForm.username, loginForm.password)
-    ElMessage.success('Login successful')
+    ElMessage.success('登录成功')
     if (authStore.isAdmin) {
       router.push('/admin')
     } else {
       router.push('/')
     }
   } catch (error) {
-    ElMessage.error(error.response?.data?.detail || 'Login failed')
+    ElMessage.error(error.response?.data?.detail || '登录失败')
   } finally {
     loading.value = false
   }

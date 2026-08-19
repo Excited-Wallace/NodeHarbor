@@ -8,10 +8,10 @@
 <template>
   <div class="not-found-container">
     <h1 class="error-code">404</h1>
-    <h2 class="error-message">Page Not Found</h2>
-    <p class="error-desc">Oops! The page you are looking for does not exist.</p>
+    <h2 class="error-message">页面未找到</h2>
+    <p class="error-desc">抱歉，您访问的页面不存在或已被移除。</p>
     <el-button type="primary" @click="router.push('/')" size="large">
-      Return to Home
+      返回首页
     </el-button>
   </div>
 </template>

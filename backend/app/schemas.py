@@ -62,12 +62,35 @@ class UserInfo(BaseModel):
 class ConfigResponse(BaseModel):
     """
     订阅配置文件响应模型
+    
+    字段说明：
+        - id: 主键 ID
+        - name: 配置文件显示名称
+        - filename: 存储文件名
+        - description: 详细描述
+        - file_size: 文件大小（字节）
+        - is_public: 是否对普通用户可见
+        - subscription_url: 原始订阅链接
+        - auto_update: 是否启用定时自动更新
+        - update_interval_type: 定时模式 ('daily' 每日指定时刻 / 'interval' 固定间隔小时)
+        - update_time: 定时时间字符串 (如 "04:00" 或 "12")
+        - last_auto_update_at: 上次自动更新时间
+        - last_auto_update_status: 上次自动更新状态说明
+        - created_at: 创建时间
+        - updated_at: 最后更新时间
     """
     id: int
     name: str
     filename: str
     description: Optional[str] = None
     file_size: int
+    is_public: bool = True
+    subscription_url: Optional[str] = None
+    auto_update: bool = False
+    update_interval_type: Optional[str] = "daily"
+    update_time: Optional[str] = "04:00"
+    last_auto_update_at: Optional[datetime] = None
+    last_auto_update_status: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -80,12 +103,38 @@ class ConfigCreate(BaseModel):
     """
     name: str
     description: Optional[str] = None
+    is_public: bool = True
+
+class ConfigVisibilityUpdate(BaseModel):
+    """
+    修改配置文件对普通用户可见性的请求模型
+    
+    字段说明：
+        is_public: 布尔值，True 表示普通用户可见，False 表示仅管理员可见
+    """
+    is_public: bool = Field(..., description="对普通用户是否可见 (True: 可见, False: 隐藏)")
+
+class ConfigScheduleUpdate(BaseModel):
+    """
+    修改配置文件定时自动更新策略的请求模型
+    
+    字段说明：
+        auto_update: 是否开启自动更新
+        subscription_url: 订阅链接地址（若提供）
+        update_interval_type: 更新模式 ('daily' 每日 / 'interval' 间隔)
+        update_time: 设定的时间值 (如 "04:00" 或 "12")
+    """
+    auto_update: bool = Field(..., description="是否开启定时自动更新")
+    subscription_url: Optional[str] = Field(None, description="订阅链接原始地址")
+    update_interval_type: Optional[str] = Field("daily", description="定时模式: daily (每日) / interval (间隔)")
+    update_time: Optional[str] = Field("04:00", description="定时时间设置 (如 04:00 或 12)")
 
 class ConfigContentUpdate(BaseModel):
     """
     更新订阅配置文本内容的模型
     """
     content: str
+
 
 # ==========================================
 # 3. 代理客户端与 GitHub Release 下载缓存相关模型

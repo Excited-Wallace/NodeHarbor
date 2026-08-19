@@ -13,7 +13,7 @@
     <!-- 页面顶栏：标题与服务端缓存容量状态条 -->
     <div class="page-top-header">
       <div class="header-titles">
-        <h2 class="main-title">客户端下载中心</h2>
+        <h2 class="main-title">软件下载中心</h2>
         <p class="sub-title">
           聚合 4 款主流开源代理客户端，点击卡片自动拉取 GitHub 最新 Release 版本并由服务端中转缓存分发。
         </p>
@@ -25,6 +25,20 @@
           <div class="widget-title">
             <span class="server-dot"></span>
             <span>服务器缓存容量</span>
+            <!-- 一键清除缓存按钮 (紧贴在服务器缓存容量旁边) -->
+            <el-tooltip content="一键清空服务端所有已缓存的安装包物理文件以释放空间" placement="top">
+              <el-button
+                size="small"
+                type="danger"
+                plain
+                class="clear-cache-btn"
+                :icon="Delete"
+                :loading="clearingCache"
+                @click="handleClearCache"
+              >
+                一键清除缓存
+              </el-button>
+            </el-tooltip>
           </div>
           <span class="widget-usage">{{ cacheStatus.total_used_mb }} MB / {{ cacheStatus.max_limit_mb }} MB</span>
         </div>
@@ -68,11 +82,12 @@
  * 业务逻辑
  */
 import { ref, onMounted } from 'vue'
-import { getClients, getCacheStatus } from '../api/clients'
+import { getClients, getCacheStatus, clearAllCache } from '../api/clients'
 import { useAuthStore } from '../stores/auth'
 import ClientCard from '../components/client/ClientCard.vue'
 import ClientReleaseModal from '../components/client/ClientReleaseModal.vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Delete } from '@element-plus/icons-vue'
 
 const authStore = useAuthStore()
 
@@ -80,6 +95,7 @@ const authStore = useAuthStore()
 const clients = ref([])
 const loading = ref(false)
 const cacheStatus = ref(null)
+const clearingCache = ref(false)
 
 // 弹窗状态
 const modalVisible = ref(false)
@@ -110,6 +126,36 @@ const loadCacheStatus = async () => {
     cacheStatus.value = res.data
   } catch (error) {
     console.error('获取缓存状态失败', error)
+  }
+}
+
+/**
+ * 管理员一键清空服务端所有安装包缓存
+ */
+const handleClearCache = async () => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要一键清空服务端所有已缓存的客户端安装包及临时文件吗？\n清空后将释放全部占用空间，后续用户下载时将重新触发服务端中转流式下载。',
+      '清空服务端缓存',
+      {
+        confirmButtonText: '确定清空',
+        cancelButtonText: '取消',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger'
+      }
+    )
+    
+    clearingCache.value = true
+    const res = await clearAllCache()
+    ElMessage.success(res.data?.message || '服务端缓存已全部清空')
+    await loadCacheStatus()
+    await loadClients()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.detail || '清空缓存失败')
+    }
+  } finally {
+    clearingCache.value = false
   }
 }
 
@@ -203,6 +249,15 @@ onMounted(() => {
   font-size: 13px;
   font-weight: 600;
   color: #e2e8f0;
+}
+
+.clear-cache-btn {
+  margin-left: 6px !important;
+  padding: 2px 8px !important;
+  height: 22px !important;
+  font-size: 11px !important;
+  border-radius: 6px !important;
+  line-height: 1 !important;
 }
 
 .server-dot {

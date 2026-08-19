@@ -199,6 +199,52 @@ def cleanup_expired_and_oversized_cache(db: Session) -> dict:
         "current_total_size": total_size
     }
 
+def clear_all_cache(db: Session) -> dict:
+    """
+    一键强制清空服务端所有客户端安装包缓存及临时文件
+    
+    处理流程：
+        1. 遍历并彻底物理删除 downloads/ 目录下的所有文件（含已缓存安装包及 .tmp 临时文件）；
+        2. 清空数据库中的 ClientDownload 记录；
+        3. 重新获取最新的缓存容量状态并返回统计信息。
+        
+    参数说明:
+        - db: SQLAlchemy 数据库会话
+        
+    返回:
+        - 字典包含: cleared_files_count (清除文件数), freed_bytes (释放字节数), freed_mb (释放MB), cache_status (最新缓存状态)
+    """
+    os.makedirs(settings.DOWNLOAD_DIR, exist_ok=True)
+    
+    cleared_files_count = 0
+    freed_bytes = 0
+    
+    # 1. 物理删除 downloads 目录下全部文件
+    for root, _, files in os.walk(settings.DOWNLOAD_DIR):
+        for f in files:
+            fp = os.path.join(root, f)
+            if os.path.isfile(fp):
+                try:
+                    freed_bytes += os.path.getsize(fp)
+                    delete_file(fp)
+                    cleared_files_count += 1
+                except Exception as e:
+                    print(f"[ClearCache Error] 删除文件失败 {fp}: {e}")
+                    
+    # 2. 清空数据库 ClientDownload 记录
+    db.query(ClientDownload).delete()
+    db.commit()
+    
+    # 3. 统计最新容量
+    status = get_cache_storage_status(db)
+    
+    return {
+        "cleared_files_count": cleared_files_count,
+        "freed_bytes": freed_bytes,
+        "freed_mb": round(freed_bytes / (1024 * 1024), 2),
+        "cache_status": status
+    }
+
 def get_cache_storage_status(db: Session) -> dict:
     """
     查询服务端缓存使用情况
@@ -230,6 +276,7 @@ def get_cache_storage_status(db: Session) -> dict:
         "cached_files_count": count,
         "expire_hours": CACHE_EXPIRE_HOURS
     }
+
 
 # =========================================================================
 # 2. 客户端卡片列表与 Release 获取（24小时本地缓存复用）

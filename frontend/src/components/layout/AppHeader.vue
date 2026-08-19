@@ -1,3 +1,11 @@
+<!--
+  AppHeader.vue - 全局顶部导航栏组件
+  
+  组件作用：
+    - 展示系统 Logo 及名称 (NodeHarbor)
+    - 展示当前登录用户的头像首字母、用户名与中文角色标识（管理员 / 用户）
+    - 提供退出登录功能，清理 Token 并跳转至登录页
+-->
 <template>
   <div class="header-content">
     <div class="logo-area">
@@ -11,12 +19,12 @@
         </el-avatar>
         <span class="username">{{ authStore.username }}</span>
         <el-tag :type="authStore.isAdmin ? 'danger' : 'info'" size="small" effect="dark" class="role-tag">
-          {{ authStore.role.toUpperCase() }}
+          {{ authStore.isAdmin ? '管理员' : '用户' }}
         </el-tag>
       </div>
       
       <el-button type="primary" plain class="logout-btn" @click="handleLogout" :icon="SwitchButton">
-        Logout
+        退出登录
       </el-button>
     </div>
   </div>
@@ -30,6 +38,9 @@ import { SwitchButton } from '@element-plus/icons-vue'
 const authStore = useAuthStore()
 const router = useRouter()
 
+/**
+ * 处理退出登录：清除用户 Token 状态并重定向至 /login
+ */
 const handleLogout = () => {
   authStore.logout()
   router.push('/login')

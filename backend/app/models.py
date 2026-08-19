@@ -12,7 +12,7 @@ NodeHarbor 数据模型定义文件 (models.py)
 """
 
 from datetime import datetime
-from sqlalchemy import String, Integer, DateTime, Text
+from sqlalchemy import String, Integer, DateTime, Text, Boolean
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
@@ -35,7 +35,23 @@ class User(Base):
 
 class Config(Base):
     """
-    配置文件模型，用于记录上传的代理订阅配置文件信息
+    配置文件模型，用于记录代理订阅配置文件信息与定时同步策略
+    
+    字段说明：
+        - id: 主键 ID
+        - name: 配置文件显示名称
+        - filename: 实际存储于 uploads/ 目录下的文件名
+        - description: 配置文件的说明描述
+        - file_size: 文件大小（字节）
+        - is_public: 是否对普通用户可见（默认 True，False 为仅管理员可见）
+        - subscription_url: 原始订阅链接（若通过 URL 导入或关联了订阅源）
+        - auto_update: 是否启用定时自动更新（默认 False）
+        - update_interval_type: 定时更新模式 ('daily' 每日指定时刻 / 'interval' 固定间隔小时数)
+        - update_time: 定时时间配置值 (例如每日时刻 '04:00' 或间隔小时数 '12')
+        - last_auto_update_at: 上次自动更新成功的 UTC 时间戳
+        - last_auto_update_status: 上次自动更新的执行结果状态 ('success' 或详细失败错误原因)
+        - created_at: 配置首次创建时间
+        - updated_at: 配置最后一次内容修改时间
     """
     __tablename__ = "configs"
 
@@ -44,7 +60,14 @@ class Config(Base):
     filename: Mapped[str] = mapped_column(String) # 实际存储文件名
     description: Mapped[str] = mapped_column(String, nullable=True) # 配置描述
     file_size: Mapped[int] = mapped_column(Integer) # 文件大小（字节）
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow) # 上传时间
+    is_public: Mapped[bool] = mapped_column(Boolean, default=True) # 对普通用户是否可见 (True: 可见, False: 隐藏)
+    subscription_url: Mapped[str] = mapped_column(String, nullable=True) # 原始订阅源地址
+    auto_update: Mapped[bool] = mapped_column(Boolean, default=False) # 是否开启后台定时自动更新
+    update_interval_type: Mapped[str] = mapped_column(String, nullable=True, default="daily") # 定时类型: daily (每日) / interval (间隔)
+    update_time: Mapped[str] = mapped_column(String, nullable=True, default="04:00") # 定时时间值 (如 "04:00" 或 "12")
+    last_auto_update_at: Mapped[datetime] = mapped_column(DateTime, nullable=True) # 上次定时自动同步时间
+    last_auto_update_status: Mapped[str] = mapped_column(String, nullable=True) # 上次自动更新执行状态描述
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow) # 创建/上传时间
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow) # 最后修改时间
 
 class ClientDownload(Base):

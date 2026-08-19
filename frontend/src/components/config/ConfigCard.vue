@@ -2,14 +2,16 @@
   ConfigCard.vue - 配置文件卡片组件
   
   文件功能说明：
-    - 在卡片内完整展示单个配置文件的所有信息（配置名称、大小、详细描述、创建时间）
+    - 在卡片内完整展示单个配置文件的所有信息（配置名称、大小、详细描述、更新时间）
+    - 针对开启了定时更新的配置，展示醒目的“⚡ 定时更新: 每日 04:00”或“⚡ 定时更新: 每 12 小时”状态徽章与悬浮详情
+    - 管理员视角下展示“公开”或“私有”可见性状态
     - 保证所有内容在卡片内部完整呈现，无文字截断、无任何左右水平滑动条
     - 提供响应式操作按钮组：
       - 普通用户：查看内容（在线弹窗预览）、复制链接（一键复制订阅URL）、下载（下载 .yaml 文件）
       - 管理员：编辑（在线代码编辑器）、删除（安全确认弹窗）
   
   Props 参数说明：
-    - config: Object, 配置文件对象 { id, name, description, file_size, created_at, updated_at }
+    - config: Object, 配置文件对象 { id, name, description, file_size, is_public, auto_update, update_interval_type, update_time, last_auto_update_at, last_auto_update_status, created_at, updated_at }
     - showActions: Boolean, 是否为管理员管理模式（默认为 false）
   
   Events 事件说明：
@@ -19,7 +21,7 @@
 -->
 <template>
   <el-card class="config-card" shadow="hover">
-    <!-- 卡片顶部：名称与文件大小 -->
+    <!-- 卡片顶部：名称、定时更新标签与文件大小 -->
     <div class="card-header">
       <div 
         class="config-name-wrapper" 
@@ -30,8 +32,48 @@
           {{ config.name }}
         </h3>
       </div>
-      <el-tag size="small" type="primary" effect="plain" class="size-tag">
-        {{ formatSize(config.file_size) }}
+      <div class="header-tags">
+        <el-tag size="small" type="primary" effect="plain" class="size-tag">
+          {{ formatSize(config.file_size) }}
+        </el-tag>
+      </div>
+    </div>
+
+    <!-- 状态徽章栏：定时更新标识与管理员可见性标识 -->
+    <div class="card-badges" v-if="config.auto_update || showActions">
+      <!-- 定时自动更新状态徽章 (附带悬浮 Tooltip 提示详情) -->
+      <el-tooltip
+        v-if="config.auto_update"
+        placement="top"
+        effect="dark"
+      >
+        <template #content>
+          <div class="schedule-tooltip">
+            <div><strong>定时同步策略:</strong> {{ formatScheduleText(config) }}</div>
+            <div v-if="config.last_auto_update_at"><strong>上次自动同步:</strong> {{ formatDate(config.last_auto_update_at) }}</div>
+            <div v-if="config.last_auto_update_status">
+              <strong>同步状态:</strong> 
+              <span :style="{ color: config.last_auto_update_status === 'success' ? '#67c23a' : '#f56c6c' }">
+                {{ config.last_auto_update_status === 'success' ? '正常' : config.last_auto_update_status }}
+              </span>
+            </div>
+          </div>
+        </template>
+        <el-tag size="small" type="warning" effect="light" class="auto-update-tag">
+          <el-icon class="badge-icon"><Timer /></el-icon>
+          <span>{{ formatScheduleBadge(config) }}</span>
+        </el-tag>
+      </el-tooltip>
+
+      <!-- 管理员视角：普通用户可见性标签 -->
+      <el-tag
+        v-if="showActions"
+        size="small"
+        :type="config.is_public ? 'success' : 'info'"
+        effect="plain"
+        class="visibility-tag"
+      >
+        {{ config.is_public ? '公开可见' : '仅管理可见' }}
       </el-tag>
     </div>
     
@@ -111,7 +153,7 @@
 </template>
 
 <script setup>
-import { Edit, Delete, Download, Link, View } from '@element-plus/icons-vue'
+import { Edit, Delete, Download, Link, View, Timer } from '@element-plus/icons-vue'
 import { downloadConfig } from '../../api/configs'
 import { ElMessage } from 'element-plus'
 
@@ -129,6 +171,29 @@ const props = defineProps({
 
 // 组件事件派发
 const emit = defineEmits(['edit', 'delete', 'view'])
+
+/**
+ * 格式化定时更新徽章显示简写
+ * @param {Object} cfg 配置对象
+ * @returns {string} 如 '每日 04:00' 或 '每 12 小时'
+ */
+const formatScheduleBadge = (cfg) => {
+  if (cfg.update_interval_type === 'interval') {
+    return `定时: 每 ${cfg.update_time || '12'} 小时`
+  }
+  return `定时: 每日 ${cfg.update_time || '04:00'}`
+}
+
+/**
+ * 格式化定时更新悬浮说明
+ * @param {Object} cfg 配置对象
+ */
+const formatScheduleText = (cfg) => {
+  if (cfg.update_interval_type === 'interval') {
+    return `每隔 ${cfg.update_time || '12'} 小时自动从订阅源抓取更新`
+  }
+  return `每天 ${cfg.update_time || '04:00'} (系统时间) 自动从订阅源抓取更新`
+}
 
 /**
  * 格式化字节数为易读字符串 (B, KB, MB, GB)
@@ -269,8 +334,46 @@ const copySubLink = () => {
   transition: color var(--transition-fast);
 }
 
+.header-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .size-tag {
   flex-shrink: 0;
+}
+
+/* 状态徽章条 */
+.card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.auto-update-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: help;
+  font-weight: 500;
+  border-radius: 4px;
+}
+
+.badge-icon {
+  font-size: 13px;
+}
+
+.visibility-tag {
+  border-radius: 4px;
+}
+
+.schedule-tooltip {
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 /* 主体描述样式：完整展示并自适应折行 */

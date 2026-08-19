@@ -18,7 +18,7 @@
     <!-- 页面标题与概览 -->
     <div class="page-header">
       <div>
-        <h2 class="page-title">Configurations</h2>
+        <h2 class="page-title">配置列表</h2>
         <p class="page-subtitle">浏览可用订阅配置，直接查看配置详情或复制订阅链接至客户端。</p>
       </div>
     </div>
@@ -74,6 +74,10 @@
               </el-tag>
               <el-tag size="small" type="info" effect="plain">
                 更新: {{ formatDate(previewDialog.config?.updated_at || previewDialog.config?.created_at) }}
+              </el-tag>
+              <!-- 若开启定时更新，展示定时同步标签 -->
+              <el-tag v-if="previewDialog.config?.auto_update" size="small" type="warning" effect="light">
+                ⚡ 定时同步: {{ previewDialog.config?.update_interval_type === 'interval' ? `每 ${previewDialog.config?.update_time || 12} 小时` : `每日 ${previewDialog.config?.update_time || '04:00'}` }}
               </el-tag>
             </div>
             <div class="quick-actions">

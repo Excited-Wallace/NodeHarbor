@@ -88,5 +88,12 @@ export const getDirectDownloadUrl = (clientId, filename) => {
 export const downloadFileBlob = (clientId, filename) => 
   api.get(`/api/clients/download/${clientId}/${encodeURIComponent(filename)}`, {
     responseType: 'blob',
-    timeout: 0 // 禁用 10 秒超时限制，确保大文件完整传输
+    timeout: 0 // 禁用 Axios 客户端下载超时，支持大文件长时间稳定传输
   })
+
+/**
+ * 管理员一键清空服务端所有已缓存的客户端安装包及临时文件
+ * 
+ * @returns {Promise} Axios 响应 Promise，返回 { status, cleared_files_count, freed_mb, cache_status }
+ */
+export const clearAllCache = () => api.post('/api/clients/cache/clear')

@@ -1,18 +1,21 @@
 <!--
-  UserDashboard - 用户仪表盘
+  UserDashboard.vue - 用户仪表盘页面（普通用户视角）
   
-  功能说明：
-    - 显示可用配置文件数量
-    - 快速下载入口
-    - 最近更新的配置文件
+  页面作用：
+    - 展示普通用户可用的配置文件统计数据
+    - 提供快速前往配置列表与软件下载的快捷入口
+  
+  接口调用：
+    - configStore.fetchConfigs(): 获取可用配置文件列表
 -->
 <template>
   <div class="dashboard-container">
     <div class="welcome-section">
-      <h2 class="welcome-title">Welcome back, {{ authStore.username }}!</h2>
-      <p class="welcome-subtitle">Here is an overview of your resources.</p>
+      <h2 class="welcome-title">欢迎回来，{{ authStore.username }}！</h2>
+      <p class="welcome-subtitle">以下是您的资源概览。</p>
     </div>
     
+    <!-- 统计指标网格 -->
     <div class="stats-grid">
       <el-card class="stat-card">
         <div class="stat-content">
@@ -21,21 +24,22 @@
           </div>
           <div class="stat-info">
             <div class="stat-value">{{ configStore.configList.length }}</div>
-            <div class="stat-label">Available Configs</div>
+            <div class="stat-label">可用配置数</div>
           </div>
         </div>
       </el-card>
     </div>
 
-    <h3 class="section-title">Quick Access</h3>
+    <!-- 快捷入口区域 -->
+    <h3 class="section-title">快捷入口</h3>
     <div class="actions-grid">
       <el-card class="action-card" @click="router.push('/configs')">
         <el-icon class="action-icon"><Document /></el-icon>
-        <span class="action-text">View Configs</span>
+        <span class="action-text">查看配置</span>
       </el-card>
       <el-card class="action-card" @click="router.push('/clients')">
         <el-icon class="action-icon"><Download /></el-icon>
-        <span class="action-text">Download Clients</span>
+        <span class="action-text">软件下载</span>
       </el-card>
     </div>
   </div>
