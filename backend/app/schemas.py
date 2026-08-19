@@ -1,23 +1,67 @@
-from pydantic import BaseModel
+"""
+NodeHarbor 数据校验与序列化模型文件 (schemas.py)
+
+文件作用：
+    定义 FastAPI 接口的请求体 (Request) 与响应体 (Response) 的 Pydantic 数据模型，
+    用于数据格式校验、类型约束以及自动生成 OpenAPI 文档。
+
+主要模块：
+    1. 认证模块模型 (LoginRequest, TokenResponse, UserInfo)
+    2. 订阅配置模块模型 (ConfigResponse, ConfigCreate, ConfigContentUpdate)
+    3. 代理客户端下载与缓存模块模型 (ClientCardInfo, ClientReleaseAsset, ClientReleaseInfo, DownloadCacheRequest, DownloadTaskStatus, CacheStorageStatus)
+    4. 系统监控模块模型 (SystemStatusResponse)
+"""
+
+from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
+
+# ==========================================
+# 1. 用户认证相关模型
+# ==========================================
 
 class LoginRequest(BaseModel):
-    username: str
-    password: str
+    """
+    登录请求模型
+    
+    字段说明：
+        username: 用户名
+        password: 登录密码
+    """
+    username: str = Field(..., description="登录用户名")
+    password: str = Field(..., description="登录密码")
 
 class TokenResponse(BaseModel):
+    """
+    JWT 登录成功响应模型
+    
+    字段说明：
+        access_token: 签发的 JWT 访问令牌
+        token_type: 令牌类型，默认为 'bearer'
+        role: 用户所属角色 ('admin' 或 'user')
+    """
     access_token: str
     token_type: str = "bearer"
     role: str
 
 class UserInfo(BaseModel):
+    """
+    当前登录用户信息模型
+    
+    字段说明：
+        username: 用户名
+        role: 用户角色 ('admin' 或 'user')
+    """
     username: str
     role: str
 
+# ==========================================
+# 2. 代理订阅配置相关模型
+# ==========================================
+
 class ConfigResponse(BaseModel):
     """
-    配置文件的响应模型
+    订阅配置文件响应模型
     """
     id: int
     name: str
@@ -32,26 +76,164 @@ class ConfigResponse(BaseModel):
 
 class ConfigCreate(BaseModel):
     """
-    更新配置文件基础信息的模型
+    创建/更新配置文件基础信息的模型
     """
     name: str
     description: Optional[str] = None
 
 class ConfigContentUpdate(BaseModel):
     """
-    更新配置文本内容的模型
+    更新订阅配置文本内容的模型
     """
     content: str
 
-class ClientStatusResponse(BaseModel):
+# ==========================================
+# 3. 代理客户端与 GitHub Release 下载缓存相关模型
+# ==========================================
+
+class ClientCardInfo(BaseModel):
     """
-    客户端缓存状态的响应模型
+    客户端卡片基本信息模型（用于客户端下载首页展示 4 个卡片）
+    
+    字段说明：
+        client_id: 客户端唯一标识 (如 v2rayn, v2rayng, clash-verge, clash-meta-android)
+        name: 客户端显示名称 (如 v2rayN)
+        repo: GitHub 官方开源仓库 (如 2dust/v2rayN)
+        description: 客户端简介与说明
+        platforms: 客户端支持的操作系统平台列表 (如 ['Windows'])
+        badge: 推荐标签 (如 'Windows 首选')
+        github_url: GitHub Releases 页面链接
+        cached_version: 本地最新已缓存的版本号 (如果有)
     """
+    client_id: str
+    name: str
+    repo: str
+    description: str
+    platforms: List[str]
+    badge: str
+    github_url: str
+    cached_version: Optional[str] = None
+
+class ClientReleaseAsset(BaseModel):
+    """
+    GitHub Release 资产文件模型
+    
+    字段说明：
+        id: GitHub Asset 唯一 ID
+        name: 资产文件名 (如 v2rayN-With-Core.zip)
+        size: 文件大小 (字节)
+        size_human: 格式化后的文件大小 (如 45.2 MB)
+        download_url: GitHub 原始直链
+        download_count: GitHub 上的下载次数
+        is_cached: 当前文件是否已在 NodeHarbor 服务器上完成缓存
+        cached_filename: 服务端本地缓存的文件名 (若已缓存)
+        cached_expires_in: 缓存剩余有效秒数 (若已缓存，单文件 1 小时有效期)
+    """
+    id: str
+    name: str
+    size: int
+    size_human: str
+    download_url: str
+    download_count: int = 0
+    is_cached: bool = False
+    cached_filename: Optional[str] = None
+    cached_expires_in: Optional[int] = None
+
+class ClientReleaseInfo(BaseModel):
+    """
+    GitHub Release 详情响应模型
+    
+    字段说明：
+        client_id: 客户端标识
+        client_name: 客户端名称
+        repo: 对应 GitHub 仓库
+        tag_name: 最新 Release 版本 Tag (如 v2.5.2)
+        release_name: Release 标题
+        published_at: GitHub 发布时间
+        html_url: GitHub Release 页面地址
+        body: Release 更新日志说明 (Markdown)
+        assets: 包含的所有可供下载的 Release 资产文件列表
+        from_cache: 是否命中 24 小时本地元数据缓存
+        cache_fetched_at: 本地元数据缓存获取时间
+    """
+    client_id: str
     client_name: str
-    platform: str
-    version: Optional[str] = None
-    cached: bool
-    cached_at: Optional[datetime] = None
+    repo: str
+    tag_name: str
+    release_name: Optional[str] = None
+    published_at: Optional[str] = None
+    html_url: str
+    body: Optional[str] = None
+    assets: List[ClientReleaseAsset] = []
+    from_cache: bool = False
+    cache_fetched_at: Optional[datetime] = None
+
+class DownloadCacheRequest(BaseModel):
+    """
+    触发服务端缓存客户端文件的请求体
+    
+    字段说明：
+        client_id: 客户端标识 (如 v2rayn)
+        asset_id: GitHub 资产 ID
+        asset_name: 资产文件名 (如 v2rayN-With-Core.zip)
+        download_url: GitHub 原始下载链接
+        version: Release 版本号 (如 7.24.4)
+    """
+    client_id: str
+    asset_id: str
+    asset_name: str
+    download_url: str
+    version: str
+
+class DownloadTaskStatus(BaseModel):
+    """
+    服务端异步下载任务状态模型
+    
+    字段说明：
+        task_id: 下载任务唯一 ID
+        client_id: 客户端标识
+        asset_name: 文件名
+        status: 任务状态 ('pending' / 'downloading' / 'completed' / 'failed')
+        progress: 下载进度百分比 (0 - 100)
+        downloaded_bytes: 已下载字节数
+        total_bytes: 文件总字节数
+        speed_human: 当前下载速率 (如 '2.4 MB/s')
+        filename: 下载完成后保存的文件名
+        error: 错误原因 (若失败)
+    """
+    task_id: str
+    client_id: str
+    asset_name: str
+    status: str
+    progress: float = 0.0
+    downloaded_bytes: int = 0
+    total_bytes: int = 0
+    speed_human: str = "0 B/s"
+    filename: Optional[str] = None
+    error: Optional[str] = None
+
+class CacheStorageStatus(BaseModel):
+    """
+    服务端缓存容量状态模型
+    
+    字段说明：
+        total_used_bytes: 当前已使用的缓存大小（字节）
+        total_used_mb: 当前已使用的缓存大小（MB）
+        max_limit_mb: 最大缓存限制（512 MB）
+        usage_percent: 使用率百分比
+        cached_files_count: 当前缓存的安装包文件数量
+        expire_hours: 缓存有效期（1 小时）
+    """
+    total_used_bytes: int
+    total_used_mb: float
+    max_limit_mb: float = 512.0
+    usage_percent: float
+    cached_files_count: int
+    expire_hours: int = 1
+
+# ==========================================
+# 4. 系统状态相关模型
+# ==========================================
 
 class SystemStatusResponse(BaseModel):
     """
