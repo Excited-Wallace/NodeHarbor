@@ -57,10 +57,29 @@ def get_config(id: int, db: Session = Depends(get_db), current_user: User = Depe
     """
     return config_service.get_config(db, id)
 
-@router.get("/{id}/download")
-def download_config(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+@router.api_route("/{id}/download", methods=["GET", "HEAD"])
+def download_config(id: int, db: Session = Depends(get_db)):
     """
-    下载配置文件（使用 FileResponse 返回附件）
+    公开获取/下载配置文件及订阅接口（免认证，支持 Clash、Shadowrocket 等客户端直接作为订阅源拉取）
+    
+    接口功能：
+        - 供外部代理客户端（如 Clash、Clash Verge、Clash.Meta、Shadowrocket、Sing-box 等）通过订阅链接直接获取 YAML 格式配置。
+        - 供前端网页直接发起下载或无鉴权获取配置。
+        
+    接口调用方式：
+        - 请求方法：GET
+        - 请求路径：/api/configs/{id}/download
+        - 示例 URL：http://localhost:8001/api/configs/1/download
+        - 鉴权说明：公开端点，无需携带 Bearer Token
+        
+    参数说明：
+        - id (int): 配置文件在数据库中的主键 ID
+        - db (Session): SQLAlchemy 数据库会话（自动注入）
+        
+    响应内容：
+        - Content-Type: text/yaml; charset=utf-8
+        - Content-Disposition: inline; filename*=UTF-8''... (方便客户端直接读取内容，也支持浏览器下载)
+        - profile-update-interval: 24 (建议客户端每 24 小时更新一次订阅)
     """
     config = config_service.get_config(db, id)
     file_path = os.path.join(settings.UPLOAD_DIR, config.filename)
@@ -71,8 +90,12 @@ def download_config(id: int, db: Session = Depends(get_db), current_user: User =
     return FileResponse(
         path=file_path,
         filename=f"{config.name}.yaml",
-        media_type="application/x-yaml",
-        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{encoded_name}"}
+        media_type="text/yaml; charset=utf-8",
+        headers={
+            "Content-Disposition": f"inline; filename*=UTF-8''{encoded_name}",
+            "profile-update-interval": "24",
+            "subscription-userinfo": "upload=0; download=0; total=107374182400; expire=0"
+        }
     )
 
 @router.get("/{id}/content")
