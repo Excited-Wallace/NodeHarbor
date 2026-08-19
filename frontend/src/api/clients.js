@@ -1,9 +1,7 @@
-/**
- * 客户端下载 API 封装
- * 
- * 接口：
- *   - getClients(): GET /api/clients 获取支持的客户端列表及版本信息
- *   - fetchClient(name, platform): POST /api/clients/{name}/fetch 触发服务器下载
- *   - downloadClient(name, platform): GET /api/clients/{name}/download 下载缓存文件
- *   - getStatus(name): GET /api/clients/{name}/status 查询下载进度
- */
+import api from './index'
+
+export const getClients = () => api.get('/api/clients')
+
+export const fetchClient = (name, platform) => api.post(`/api/clients/${name}/fetch?platform=${platform}`)
+
+export const downloadClient = (name, platform) => api.get(`/api/clients/${name}/download?platform=${platform}`, { responseType: 'blob' })

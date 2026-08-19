@@ -42,8 +42,11 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 
-# ===== 日志 =====
+# ===== 日志与运行状态 =====
 *.log
+logs/
+*.pid
+
 
 # ===== LICENSE =====
 LICENSE

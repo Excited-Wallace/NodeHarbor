@@ -1,12 +1,19 @@
-/**
- * 配置文件 API 封装
- * 
- * 接口：
- *   - getConfigs(): GET /api/configs 获取配置列表
- *   - uploadConfig(formData): POST /api/configs/upload 上传配置文件
- *   - getConfigDetail(id): GET /api/configs/{id} 获取配置详情
- *   - downloadConfig(id): GET /api/configs/{id}/download 下载配置文件
- *   - getContent(id): GET /api/configs/{id}/content 获取文件文本（编辑用）
- *   - updateContent(id, content): PUT /api/configs/{id}/content 更新文件内容
- *   - deleteConfig(id): DELETE /api/configs/{id} 删除配置文件
- */
+import api from './index'
+
+export const getConfigs = () => api.get('/api/configs')
+
+export const uploadConfig = (formData) => {
+  return api.post('/api/configs/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
+export const getConfigDetail = (id) => api.get(`/api/configs/${id}`)
+
+export const downloadConfig = (id) => api.get(`/api/configs/${id}/download`, { responseType: 'blob' })
+
+export const getContent = (id) => api.get(`/api/configs/${id}/content`)
+
+export const updateContent = (id, content) => api.put(`/api/configs/${id}/content`, { content })
+
+export const deleteConfig = (id) => api.delete(`/api/configs/${id}`)

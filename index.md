@@ -9,7 +9,10 @@ NodeHarbor-1/
 ├── index.md                              # 📋 项目目录结构索引（本文件）
 ├── README.md                             # 📖 项目说明文档（部署指南、使用说明）
 ├── .gitignore                            # 🚫 Git 忽略规则
+├── start.sh                              # 🚀 一键启动脚本（环境检查、依赖安装、前后端后台启动）
+├── stop.sh                               # 🛑 一键停止脚本（优雅终止、超时强杀、端口清理）
 │
+
 ├── backend/                              # ===== 🐍 FastAPI 后端 =====
 │   │
 │   ├── app/                              # 应用主目录
@@ -34,7 +37,7 @@ NodeHarbor-1/
 │   │   │                                 #   - ClientDownload: 客户端缓存记录表（client_name, platform, version, cached_at）
 │   │   │
 │   │   ├── schemas.py                    # Pydantic 请求/响应数据模型
-│   │   │                                 #   - LoginRequest: 登录请求（password, role）
+│   │   │                                 #   - LoginRequest: 登录请求（username, password）
 │   │   │                                 #   - TokenResponse: Token 响应
 │   │   │                                 #   - ConfigResponse: 配置文件信息响应
 │   │   │                                 #   - ClientInfo: 客户端信息响应
@@ -53,7 +56,7 @@ NodeHarbor-1/
 │   │   │   ├── __init__.py
 │   │   │   │
 │   │   │   ├── auth.py                   # 认证路由
-│   │   │   │                             #   POST /api/auth/login    - 密码登录（请求体: password + role）
+│   │   │   │                             #   POST /api/auth/login    - 密码登录（请求体: username + password）
 │   │   │   │                             #   GET  /api/auth/me       - 获取当前登录用户信息
 │   │   │   │
 │   │   │   ├── configs.py                # 配置文件路由
@@ -149,16 +152,15 @@ NodeHarbor-1/
 │       │
 │       ├── router/                       # 路由配置
 │       │   └── index.js                  # Vue Router 路由定义
-│       │                                 #   默认路径 (/) 为用户界面，/admin 为管理员界面
+│       │                                 #   统一登录路径为 /login
 │       │                                 #
 │       │                                 #   用户路由：
-│       │                                 #     /login           - 用户登录页
+│       │                                 #     /login           - 统一登录页
 │       │                                 #     /                - 用户仪表盘
 │       │                                 #     /configs         - 查看与下载配置
 │       │                                 #     /clients         - 客户端下载
 │       │                                 #
 │       │                                 #   管理员路由：
-│       │                                 #     /admin/login     - 管理员登录页
 │       │                                 #     /admin           - 管理员仪表盘
 │       │                                 #     /admin/configs   - 配置管理（CRUD）
 │       │                                 #     /admin/configs/:id/edit - 在线编辑配置
@@ -181,7 +183,7 @@ NodeHarbor-1/
 │       │   │                             #   - 响应拦截器：处理 401 跳转登录
 │       │   │
 │       │   ├── auth.js                   # 认证 API
-│       │   │                             #   - login(password, role)
+│       │   │                             #   - login(username, password)
 │       │   │                             #   - getMe()
 │       │   │
 │       │   ├── configs.js                # 配置文件 API
@@ -193,8 +195,8 @@ NodeHarbor-1/
 │       │
 │       ├── views/                        # 页面级组件
 │       │   │
-│       │   ├── LoginView.vue             # 登录页（用户和管理员共用）
-│       │   │                             #   - 仅密码输入框，通过当前路由路径判断角色
+│       │   ├── LoginView.vue             # 登录页（统一入口）
+│       │   │                             #   - 账号和密码输入框，根据账号返回对应权限角色
 │       │   │                             #   - 深色主题，品牌 Logo
 │       │   │
 │       │   ├── admin/                    # 管理员专属页面
@@ -263,8 +265,9 @@ NodeHarbor-1/
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | INTEGER PK | 主键 |
-| role | TEXT UNIQUE | 角色（admin / user） |
-| password_hash | TEXT | bcrypt 加密密码，默认密码 `admin` |
+| username | TEXT UNIQUE | 账号名（如 admin, user） |
+| role | TEXT | 角色（admin / user） |
+| password_hash | TEXT | bcrypt 加密密码 |
 | created_at | DATETIME | 创建时间 |
 
 ### configs 表

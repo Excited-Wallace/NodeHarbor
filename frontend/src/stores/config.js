@@ -1,11 +1,34 @@
-/**
- * 配置文件状态管理 (Pinia Store)
- * 
- * 状态：
- *   - configList: 配置文件列表
- *   - loading: 加载状态
- * 
- * 方法：
- *   - fetchConfigs(): 获取配置列表
- *   - deleteConfig(id): 删除配置
- */
+import { defineStore } from 'pinia'
+import { getConfigs, deleteConfig as deleteConfigAPI } from '../api/configs'
+import { ElMessage } from 'element-plus'
+
+export const useConfigStore = defineStore('config', {
+  state: () => ({
+    configList: [],
+    loading: false
+  }),
+  actions: {
+    async fetchConfigs() {
+      this.loading = true
+      try {
+        const response = await getConfigs()
+        this.configList = response.data
+      } catch (error) {
+        ElMessage.error('Failed to fetch configs')
+      } finally {
+        this.loading = false
+      }
+    },
+    async deleteConfig(id) {
+      try {
+        await deleteConfigAPI(id)
+        this.configList = this.configList.filter(c => c.id !== id)
+        ElMessage.success('Config deleted successfully')
+        return true
+      } catch (error) {
+        ElMessage.error('Failed to delete config')
+        return false
+      }
+    }
+  }
+})

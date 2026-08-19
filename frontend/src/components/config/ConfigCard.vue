@@ -1,22 +1,341 @@
 <!--
-  ConfigCard - 配置文件卡片组件
+  ConfigCard.vue - 配置文件卡片组件
   
-  Props:
-    - config: 配置文件对象 { id, name, description, file_size, created_at, updated_at }
-    - showActions: 是否显示管理操作（编辑/删除），管理员模式为 true
+  文件功能说明：
+    - 在卡片内完整展示单个配置文件的所有信息（配置名称、大小、详细描述、创建时间）
+    - 保证所有内容在卡片内部完整呈现，无文字截断、无任何左右水平滑动条
+    - 提供响应式操作按钮组：
+      - 普通用户：查看内容（在线弹窗预览）、复制链接（一键复制订阅URL）、下载（下载 .yaml 文件）
+      - 管理员：编辑（在线代码编辑器）、删除（安全确认弹窗）
   
-  Events:
-    - @download: 下载配置文件
-    - @edit: 编辑配置文件（仅管理员）
-    - @delete: 删除配置文件（仅管理员）
-    - @copy-link: 复制订阅链接
+  Props 参数说明：
+    - config: Object, 配置文件对象 { id, name, description, file_size, created_at, updated_at }
+    - showActions: Boolean, 是否为管理员管理模式（默认为 false）
+  
+  Events 事件说明：
+    - @view: 点击“查看内容”或标题触发，传递 config 对象
+    - @edit: 管理员点击“编辑”触发，传递 config.id
+    - @delete: 管理员点击“删除”触发，传递 config 对象
 -->
 <template>
-  <div>ConfigCard</div>
+  <el-card class="config-card" shadow="hover">
+    <!-- 卡片顶部：名称与文件大小 -->
+    <div class="card-header">
+      <div 
+        class="config-name-wrapper" 
+        @click="handleCardClick" 
+        :class="{ 'clickable': !showActions }"
+      >
+        <h3 class="config-name" :title="config.name">
+          {{ config.name }}
+        </h3>
+      </div>
+      <el-tag size="small" type="primary" effect="plain" class="size-tag">
+        {{ formatSize(config.file_size) }}
+      </el-tag>
+    </div>
+    
+    <!-- 卡片主体：完整展示配置描述信息，自动换行不截断 -->
+    <div class="config-body">
+      <p class="config-desc">
+        {{ config.description || '暂无描述信息' }}
+      </p>
+    </div>
+    
+    <!-- 卡片底部：时间元数据（精确到小时分钟）与整齐对齐的操作按钮组 -->
+    <div class="card-footer">
+      <div class="footer-meta">
+        <span class="upload-time">更新时间: {{ formatDate(config.updated_at || config.created_at) }}</span>
+      </div>
+      
+      <!-- 操作按钮网格：全宽自适应排列，绝无左右横向滚动条 -->
+      <div class="action-grid" :class="{ 'admin-actions': showActions, 'user-actions': !showActions }">
+        <!-- 管理员操作 -->
+        <template v-if="showActions">
+          <el-button 
+            type="primary" 
+            size="small" 
+            @click="$emit('edit', config.id)" 
+            :icon="Edit"
+            class="action-btn"
+          >
+            编辑
+          </el-button>
+          <el-button 
+            type="danger" 
+            size="small" 
+            plain 
+            @click="$emit('delete', config)" 
+            :icon="Delete"
+            class="action-btn"
+          >
+            删除
+          </el-button>
+        </template>
+        
+        <!-- 普通用户操作 -->
+        <template v-else>
+          <el-button 
+            type="primary" 
+            size="small" 
+            @click="$emit('view', config)" 
+            :icon="View"
+            class="action-btn"
+          >
+            查看内容
+          </el-button>
+          <el-button 
+            type="success" 
+            size="small" 
+            plain 
+            @click="copySubLink" 
+            :icon="Link"
+            class="action-btn"
+          >
+            复制链接
+          </el-button>
+          <el-button 
+            type="info" 
+            size="small" 
+            plain 
+            @click="handleDownload" 
+            :icon="Download"
+            class="action-btn"
+          >
+            下载
+          </el-button>
+        </template>
+      </div>
+    </div>
+  </el-card>
 </template>
 
 <script setup>
+import { Edit, Delete, Download, Link, View } from '@element-plus/icons-vue'
+import { downloadConfig } from '../../api/configs'
+import { ElMessage } from 'element-plus'
+
+// 组件入参
+const props = defineProps({
+  config: {
+    type: Object,
+    required: true
+  },
+  showActions: {
+    type: Boolean,
+    default: false
+  }
+})
+
+// 组件事件派发
+const emit = defineEmits(['edit', 'delete', 'view'])
+
+/**
+ * 格式化字节数为易读字符串 (B, KB, MB, GB)
+ * @param {number} bytes 字节数值
+ * @returns {string} 格式化结果
+ */
+const formatSize = (bytes) => {
+  if (!bytes) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+/**
+ * 格式化时间为精确到小时分钟的显示格式 (YYYY-MM-DD HH:mm)
+ * @param {string} dateString ISO 时间字符串
+ * @returns {string} 格式化后的时间字符串，例如 '2026-08-19 15:30'
+ */
+const formatDate = (dateString) => {
+  if (!dateString) return '未知时间'
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return '未知时间'
+  
+  const pad = (n) => String(n).padStart(2, '0')
+  const year = date.getFullYear()
+  const month = pad(date.getMonth() + 1)
+  const day = pad(date.getDate())
+  const hours = pad(date.getHours())
+  const minutes = pad(date.getMinutes())
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}`
+}
+
+/**
+ * 卡片标题点击：普通用户模式下直接触发查看配置内容弹窗
+ */
+const handleCardClick = () => {
+  if (!props.showActions) {
+    emit('view', props.config)
+  }
+}
+
+/**
+ * 下载配置文件 .yaml
+ */
+const handleDownload = async () => {
+  try {
+    const res = await downloadConfig(props.config.id)
+    const blob = new Blob([res.data], { type: 'application/x-yaml' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${props.config.name}.yaml`
+    link.click()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('配置文件下载已开始')
+  } catch (error) {
+    ElMessage.error('下载配置文件失败，请稍后重试')
+  }
+}
+
+/**
+ * 复制订阅链接到系统剪贴板
+ */
+const copySubLink = () => {
+  const baseUrl = window.location.origin
+  const subLink = `${baseUrl}/api/configs/${props.config.id}/download`
+  
+  navigator.clipboard.writeText(subLink).then(() => {
+    ElMessage.success('订阅链接已成功复制到剪贴板')
+  }).catch(() => {
+    ElMessage.error('复制订阅链接失败')
+  })
+}
 </script>
 
 <style scoped>
+.config-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  overflow: hidden;
+  transition: all var(--transition-normal);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+.config-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+
+:deep(.el-card__body) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 18px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 头部样式 */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.config-name-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.config-name-wrapper.clickable {
+  cursor: pointer;
+}
+
+.config-name-wrapper.clickable:hover .config-name {
+  color: var(--color-primary);
+}
+
+.config-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  transition: color var(--transition-fast);
+}
+
+.size-tag {
+  flex-shrink: 0;
+}
+
+/* 主体描述样式：完整展示并自适应折行 */
+.config-body {
+  flex: 1;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+
+.config-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* 底部区域 */
+.card-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.footer-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.upload-time {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* 按钮组自适应网格排版：100% 宽度，绝无水平滚动条 */
+.action-grid {
+  display: grid;
+  width: 100%;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.action-grid.user-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.action-grid.admin-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.action-btn {
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 4px !important;
+  font-size: 12px !important;
+  justify-content: center;
+  box-sizing: border-box;
+}
 </style>

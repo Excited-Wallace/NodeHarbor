@@ -1,20 +1,90 @@
-/**
- * Vue Router 路由配置
- * 
- * 路由结构：
- *   默认路径 (/) 为用户界面
- *   /admin 开头为管理员界面
- * 
- * 用户路由：
- *   /login           - 用户登录页
- *   /                - 用户仪表盘
- *   /configs         - 查看与下载配置
- *   /clients         - 客户端下载
- * 
- * 管理员路由：
- *   /admin/login     - 管理员登录页
- *   /admin           - 管理员仪表盘
- *   /admin/configs   - 配置管理（CRUD）
- *   /admin/configs/:id/edit - 在线编辑配置
- *   /admin/clients   - 客户端下载
- */
+import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+
+const routes = [
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('../views/Login.vue')
+  },
+  {
+    path: '/',
+    component: () => import('../components/layout/AppLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        name: 'UserDashboard',
+        component: () => import('../views/user/UserDashboard.vue')
+      },
+      {
+        path: 'configs',
+        name: 'UserConfigs',
+        component: () => import('../views/user/ConfigList.vue')
+      },
+      {
+        path: 'clients',
+        name: 'UserClients',
+        component: () => import('../views/ClientsView.vue')
+      }
+    ]
+  },
+  {
+    path: '/admin',
+    component: () => import('../components/layout/AppLayout.vue'),
+    meta: { requiresAuth: true, requireAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'AdminDashboard',
+        component: () => import('../views/admin/AdminDashboard.vue')
+      },
+      {
+        path: 'configs',
+        name: 'AdminConfigs',
+        component: () => import('../views/admin/ConfigManager.vue')
+      },
+      {
+        path: 'configs/:id/edit',
+        name: 'AdminConfigEditor',
+        component: () => import('../views/admin/ConfigEditor.vue')
+      },
+      {
+        path: 'clients',
+        name: 'AdminClients',
+        component: () => import('../views/ClientsView.vue')
+      }
+    ]
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('../views/NotFoundView.vue')
+  }
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes
+})
+
+// 路由守卫
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore()
+  
+  if (to.meta.requiresAuth && !authStore.token) {
+    return next({ path: '/login' })
+  }
+  
+  if (to.meta.requireAdmin && !authStore.isAdmin) {
+    return next({ path: '/' })
+  }
+  
+  if (to.path === '/login' && authStore.token) {
+    return next(authStore.isAdmin ? '/admin' : '/')
+  }
+  
+  next()
+})
+
+export default router
