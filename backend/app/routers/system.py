@@ -28,6 +28,7 @@ def get_system_status(db: Session = Depends(get_db), current_user: User = Depend
     """
     configs_count = db.query(Config).count()
     cached_clients_count = db.query(ClientDownload).count()
+    users_count = db.query(User).count()
     
     db_path = os.path.join(settings.DATA_DIR, "nodeharbor.db")
     db_size = os.path.getsize(db_path) if os.path.exists(db_path) else 0
@@ -38,5 +39,6 @@ def get_system_status(db: Session = Depends(get_db), current_user: User = Depend
         "database_size": db_size,
         "configs_count": configs_count,
         "downloads_size": downloads_size,
-        "cached_clients_count": cached_clients_count
+        "cached_clients_count": cached_clients_count,
+        "users_count": users_count
     }

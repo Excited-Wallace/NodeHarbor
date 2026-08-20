@@ -11,8 +11,11 @@
 <template>
   <div class="login-container">
     <div class="login-box">
-      <!-- 页面顶部品牌标题 -->
+      <!-- 页面顶部品牌标题与网站图标 -->
       <div class="login-header">
+        <div class="login-logo-wrapper">
+          <img src="/nodeharborico.png" alt="NodeHarbor Logo" class="login-logo-img" />
+        </div>
         <h2 class="title">NodeHarbor</h2>
         <p class="subtitle">欢迎回来，请登录您的账户</p>
       </div>
@@ -145,25 +148,25 @@ const handleLogin = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #0f172a;
+  background: linear-gradient(135deg, #f0f9ff 0%, #ecfdf5 50%, #f8fafc 100%);
   position: relative;
   overflow: hidden;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-family, 'Inter', system-ui, sans-serif);
   padding: 20px;
   box-sizing: border-box;
 }
 
-/* Glassmorphism login box */
+/* Glassmorphism light login box */
 .login-box {
   width: 100%;
   max-width: 420px;
   padding: 40px 36px;
-  background: rgba(30, 41, 59, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 24px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 50px -10px rgba(2, 132, 199, 0.12), 0 10px 20px -5px rgba(16, 185, 129, 0.08);
   z-index: 10;
   position: relative;
   box-sizing: border-box;
@@ -176,14 +179,39 @@ const handleLogin = async () => {
 
 .login-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
+}
+
+.login-logo-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.login-logo-img {
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  object-fit: cover;
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  animation: float-logo 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes float-logo {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-6px) rotate(2deg);
+  }
 }
 
 .title {
   margin: 0;
   font-size: 32px;
   font-weight: 700;
-  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  background: var(--gradient-primary, linear-gradient(135deg, #0284c7, #10b981));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -0.5px;
@@ -192,53 +220,57 @@ const handleLogin = async () => {
 .subtitle {
   margin: 8px 0 0;
   font-size: 14px;
-  color: #94a3b8;
+  color: var(--text-secondary, #64748b);
 }
 
 .login-form {
-  margin-top: 16px;
+  margin-top: 20px;
 }
 
 :deep(.el-input__wrapper) {
-  background-color: rgba(15, 23, 42, 0.6) !important;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+  background-color: #f8fafc !important;
+  box-shadow: 0 0 0 1px #e2e8f0 inset !important;
   border-radius: 12px;
+  transition: all 0.2s ease;
 }
 
 :deep(.el-input__wrapper:hover), :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #38bdf8 inset !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 1.5px var(--color-primary, #0284c7) inset !important;
 }
 
 :deep(.el-input__inner) {
-  color: #f1f5f9;
+  color: var(--text-primary, #0f172a);
 }
 
 :deep(.el-input__inner::placeholder) {
-  color: #64748b;
+  color: var(--text-muted, #94a3b8);
 }
 
 .login-btn {
   width: 100%;
   border-radius: 12px;
-  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  background: var(--gradient-primary, linear-gradient(135deg, #0284c7, #10b981));
   border: none;
   font-weight: 600;
   letter-spacing: 0.5px;
   transition: all 0.3s ease;
-  margin-top: 6px;
+  margin-top: 8px;
   height: 44px;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);
 }
 
 .login-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px -10px rgba(56, 189, 248, 0.8);
+  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.4);
+  background: var(--gradient-hover, linear-gradient(135deg, #0ea5e9, #34d399));
 }
 
 /* 视图模式切换栏 */
 .mode-switch-section {
   margin-top: 24px;
   padding-top: 18px;
-  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  border-top: 1px dashed #e2e8f0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -250,10 +282,10 @@ const handleLogin = async () => {
   align-items: center;
   gap: 8px;
   padding: 6px 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   border-radius: 20px;
-  color: #cbd5e1;
+  color: var(--text-secondary, #475569);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -261,9 +293,9 @@ const handleLogin = async () => {
 }
 
 .mode-switch-btn:hover {
-  background: rgba(56, 189, 248, 0.12);
-  border-color: rgba(56, 189, 248, 0.4);
-  color: #38bdf8;
+  background: var(--bg-hover-blue, #f0f9ff);
+  border-color: var(--color-primary, #0284c7);
+  color: var(--color-primary, #0284c7);
 }
 
 .mode-icon {
@@ -272,16 +304,16 @@ const handleLogin = async () => {
 
 .mode-tip {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted, #94a3b8);
   text-align: center;
 }
 
 .mode-tip strong {
-  color: #94a3b8;
+  color: var(--text-secondary, #475569);
 }
 
 .reset-link {
-  color: #38bdf8;
+  color: var(--color-primary, #0284c7);
   cursor: pointer;
   text-decoration: underline;
 }
@@ -289,41 +321,41 @@ const handleLogin = async () => {
 .login-footer {
   margin-top: 24px;
   text-align: center;
-  color: #475569;
+  color: var(--text-muted, #94a3b8);
   font-size: 12px;
 }
 
-/* Background animated shapes */
+/* 背景流动光斑（清新蓝与柔绿） */
 .bg-shape {
   position: absolute;
-  filter: blur(80px);
+  filter: blur(90px);
   z-index: 1;
   border-radius: 50%;
-  animation: float 10s infinite ease-in-out;
+  animation: float 12s infinite ease-in-out;
   pointer-events: none;
 }
 
 .shape1 {
-  width: 400px;
-  height: 400px;
-  background: rgba(56, 189, 248, 0.18);
-  top: -100px;
+  width: 450px;
+  height: 450px;
+  background: rgba(14, 165, 233, 0.22);
+  top: -120px;
   left: -100px;
 }
 
 .shape2 {
   width: 500px;
   height: 500px;
-  background: rgba(129, 140, 248, 0.18);
+  background: rgba(16, 185, 129, 0.18);
   bottom: -150px;
   right: -100px;
-  animation-delay: -5s;
+  animation-delay: -6s;
 }
 
 @keyframes float {
   0% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -50px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
+  33% { transform: translate(30px, -50px) scale(1.08); }
+  66% { transform: translate(-20px, 20px) scale(0.92); }
   100% { transform: translate(0, 0) scale(1); }
 }
 

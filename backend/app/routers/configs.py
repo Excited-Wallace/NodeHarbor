@@ -27,7 +27,12 @@ from app.schemas import (
     ConfigResponse, 
     ConfigContentUpdate, 
     ConfigVisibilityUpdate, 
-    ConfigScheduleUpdate
+    ConfigScheduleUpdate,
+    ConfigGroupUpdate,
+    ConfigBatchGroupUpdate,
+    ConfigGroupCreate,
+    ConfigGroupUpdateBody,
+    ConfigGroupItem
 )
 from app.services import config_service
 from app.config import settings
@@ -35,24 +40,106 @@ from app.config import settings
 router = APIRouter(prefix="/api/configs", tags=["configs"])
 
 @router.get("", response_model=List[ConfigResponse])
-def get_configs(
-    db: Session = Depends(get_db), 
+def list_configs(
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
     获取代理配置文件列表
     
-    权限规则：
-        - 管理员：返回全部配置（包括已隐藏配置，并携带全部定时同步与可见性状态）；
-        - 普通用户：仅返回 is_public == True 的公开可用配置。
+    权限规则:
+        - 管理员 (role='admin'): 可查看所有配置文件 (包含公开与隐藏项)
+        - 普通用户 (role='user'): 仅可查看公开配置 (is_public=True)
     """
     is_admin = (current_user.role == "admin")
     return config_service.get_configs(db, is_admin=is_admin)
+
+@router.get("/groups", response_model=List[ConfigGroupItem])
+def list_groups(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    获取所有配置分组及其关联配置数量统计
+    """
+    is_admin = (current_user.role == "admin")
+    return config_service.get_groups(db, is_admin=is_admin)
+
+@router.post("/groups", response_model=ConfigGroupItem)
+def create_group(
+    data: ConfigGroupCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    管理员新建独立的配置分组
+    
+    参数说明:
+        - data.name: 分组名称
+        - data.description: 分组描述
+        - data.sort_order: 排序权重
+    """
+    group = config_service.create_group(
+        db=db,
+        name=data.name,
+        description=data.description,
+        sort_order=data.sort_order or 0
+    )
+    return {
+        "id": group.id,
+        "name": group.name,
+        "description": group.description,
+        "sort_order": group.sort_order,
+        "count": 0,
+        "created_at": group.created_at
+    }
+
+@router.put("/groups/{id}", response_model=ConfigGroupItem)
+def update_group(
+    id: int,
+    data: ConfigGroupUpdateBody,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    管理员修改配置分组信息 (重命名分组时自动同步已有配置的分组名)
+    """
+    group = config_service.update_group_info(
+        db=db,
+        group_id=id,
+        name=data.name,
+        description=data.description,
+        sort_order=data.sort_order
+    )
+    # 获取更新后的配置统计数
+    stats = config_service.get_groups(db, is_admin=True)
+    cnt = next((s["count"] for s in stats if s.get("id") == group.id or s["name"] == group.name), 0)
+    return {
+        "id": group.id,
+        "name": group.name,
+        "description": group.description,
+        "sort_order": group.sort_order,
+        "count": cnt,
+        "created_at": group.created_at
+    }
+
+@router.delete("/groups/{id}")
+def delete_group(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    管理员删除配置分组 (该分组下的所有配置自动安全迁移至【默认分组】)
+    """
+    config_service.delete_group(db, id)
+    return {"status": "success", "message": "分组删除成功，关联配置已迁移至默认分组"}
 
 @router.post("/upload", response_model=ConfigResponse)
 async def upload_config(
     name: str = Form(..., description="配置名称"),
     description: str = Form(None, description="配置描述"),
+    group_name: str = Form("默认分组", description="配置所属分组 (默认: 默认分组)"),
     is_public: bool = Form(True, description="是否对普通用户可见 (默认 True)"),
     method: str = Form("file", description="导入方式: file (文件) / url (订阅链接) / content (粘贴YAML)"),
     file: UploadFile = File(None, description="上传的 YAML 文件 (当 method=file 时有效)"),
@@ -71,6 +158,7 @@ async def upload_config(
         - 方式 1 (file): 上传本地 .yaml/.yml 配置文件；
         - 方式 2 (url): 输入外部代理订阅链接，系统自动拉取并保存，可勾选开启定时更新选项并设定时间；
         - 方式 3 (content): 直接粘贴 YAML 配置文件文本；
+        - 支持设置 group_name 所属分组（如 '默认分组'、'VIP专线' 等）；
         - 支持同步配置 is_public 属性（控制普通用户是否可见）。
     """
     if method == "file":
@@ -81,6 +169,7 @@ async def upload_config(
             upload_file=file, 
             name=name, 
             description=description,
+            group_name=group_name,
             is_public=is_public
         )
     elif method == "url":
@@ -91,6 +180,7 @@ async def upload_config(
             url=url, 
             name=name, 
             description=description,
+            group_name=group_name,
             is_public=is_public,
             auto_update=auto_update,
             update_interval_type=update_interval_type,
@@ -104,10 +194,47 @@ async def upload_config(
             content=content, 
             name=name, 
             description=description,
+            group_name=group_name,
             is_public=is_public
         )
     else:
         raise HTTPException(status_code=400, detail="不支持的导入方式")
+
+@router.patch("/{id}/group", response_model=ConfigResponse)
+def update_group(
+    id: int,
+    data: ConfigGroupUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    管理员修改单个配置文件的所属分组
+    
+    参数说明:
+        - id: 配置文件 ID
+        - data.group_name: 目标分组名称
+    """
+    return config_service.update_config_group(db, id, data.group_name)
+
+@router.post("/batch-group")
+def batch_update_group(
+    data: ConfigBatchGroupUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    管理员批量修改多个配置文件的所属分组
+    
+    参数说明:
+        - data.config_ids: 待调整的配置 ID 列表
+        - data.group_name: 目标分组名称
+    """
+    count = config_service.batch_update_config_group(db, data.config_ids, data.group_name)
+    return {
+        "status": "success",
+        "updated_count": count,
+        "group_name": data.group_name
+    }
 
 @router.patch("/{id}/visibility", response_model=ConfigResponse)
 def update_visibility(

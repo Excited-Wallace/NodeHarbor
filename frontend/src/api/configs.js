@@ -82,3 +82,59 @@ export const updateContent = (id, content) => api.put(`/api/configs/${id}/conten
  */
 export const deleteConfig = (id) => api.delete(`/api/configs/${id}`)
 
+/**
+ * 获取所有可用的配置分组列表及其配置数量统计
+ * @returns {Promise} 响应包含 [{ name: '默认分组', count: 5 }, ...]
+ */
+export const getConfigGroups = () => api.get('/api/configs/groups')
+
+/**
+ * 管理员修改单个配置文件的所属分组
+ * @param {number|string} id 配置文件 ID
+ * @param {string} group_name 目标分组名称
+ * @returns {Promise}
+ */
+export const updateConfigGroup = (id, group_name) => {
+  return api.patch(`/api/configs/${id}/group`, { group_name })
+}
+
+/**
+ * 管理员批量调整多个配置文件的所属分组
+ * @param {Array<number>} config_ids 待调整的配置 ID 列表
+ * @param {string} group_name 目标分组名称
+ * @returns {Promise}
+ */
+export const batchUpdateConfigGroup = (config_ids, group_name) => {
+  return api.post('/api/configs/batch-group', { config_ids, group_name })
+}
+
+/**
+ * 管理员新建独立配置分组
+ * @param {Object} data { name: string, description?: string, sort_order?: number }
+ * @returns {Promise}
+ */
+export const createConfigGroup = (data) => {
+  return api.post('/api/configs/groups', data)
+}
+
+/**
+ * 管理员更新配置分组信息 (重命名、描述、排序)
+ * @param {number|string} id 分组 ID
+ * @param {Object} data { name?: string, description?: string, sort_order?: number }
+ * @returns {Promise}
+ */
+export const updateGroupInfo = (id, data) => {
+  return api.put(`/api/configs/groups/${id}`, data)
+}
+
+/**
+ * 管理员删除配置分组 (关联配置自动回退至默认分组)
+ * @param {number|string} id 分组 ID
+ * @returns {Promise}
+ */
+export const deleteGroup = (id) => {
+  return api.delete(`/api/configs/groups/${id}`)
+}
+
+
+

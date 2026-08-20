@@ -38,7 +38,7 @@ const router = useRouter()
   font-size: 120px;
   font-weight: 800;
   margin: 0;
-  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  background: var(--gradient-primary, linear-gradient(135deg, #0284c7, #10b981));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

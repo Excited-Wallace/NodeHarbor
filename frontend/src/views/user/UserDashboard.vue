@@ -79,8 +79,9 @@ onMounted(() => {
 .welcome-title {
   margin: 0 0 6px;
   font-size: 26px;
+  font-weight: 700;
   color: var(--text-primary);
-  background: linear-gradient(135deg, #f1f5f9, #94a3b8);
+  background: var(--gradient-primary, linear-gradient(135deg, #0284c7, #10b981));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -108,6 +109,7 @@ onMounted(() => {
   border: 1px solid var(--border-color) !important;
   background: var(--bg-card) !important;
   border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-card) !important;
 }
 
 .stat-content {
@@ -128,8 +130,9 @@ onMounted(() => {
 }
 
 .configs-icon {
-  background: rgba(56, 189, 248, 0.12);
-  color: #38bdf8;
+  background: #f0f9ff;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
 }
 
 .stat-info {
@@ -159,6 +162,7 @@ onMounted(() => {
 .action-card {
   cursor: pointer;
   border: 1px solid var(--border-color) !important;
+  background: var(--bg-card) !important;
   transition: all var(--transition-fast) !important;
   display: flex;
   flex-direction: column;
@@ -166,13 +170,15 @@ onMounted(() => {
   justify-content: center;
   padding: 24px 16px;
   border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-card) !important;
   -webkit-tap-highlight-color: transparent;
 }
 
 .action-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   border-color: var(--color-primary) !important;
-  box-shadow: var(--shadow-lg) !important;
+  box-shadow: var(--shadow-card-hover) !important;
+  background: var(--bg-hover-blue) !important;
 }
 
 .action-card:active {

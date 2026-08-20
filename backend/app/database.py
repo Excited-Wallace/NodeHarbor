@@ -59,4 +59,26 @@ def migrate_database(db_engine):
             # 7. 检查 last_auto_update_status 字段
             if "last_auto_update_status" not in columns:
                 conn.execute(text("ALTER TABLE configs ADD COLUMN last_auto_update_status VARCHAR"))
+            # 8. 检查 group_name 配置分组字段 (默认为 '默认分组')
+            if "group_name" not in columns:
+                conn.execute(text("ALTER TABLE configs ADD COLUMN group_name VARCHAR DEFAULT '默认分组'"))
+            # 确保已有记录的 group_name 不为空
+            conn.execute(text("UPDATE configs SET group_name = '默认分组' WHERE group_name IS NULL OR group_name = ''"))
+
+    # 9. 确保 config_groups 表中初始化默认分组及同步已有配置中的分组
+    if "config_groups" in inspector.get_table_names():
+        with db_engine.begin() as conn:
+            # 插入默认分组（若不存在）
+            conn.execute(text("""
+                INSERT OR IGNORE INTO config_groups (name, description, sort_order, created_at, updated_at)
+                VALUES ('默认分组', '系统默认分组', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            """))
+            # 将 configs 中已存在的历史分组名同步插入到 config_groups
+            if "configs" in inspector.get_table_names():
+                conn.execute(text("""
+                    INSERT OR IGNORE INTO config_groups (name, description, sort_order, created_at, updated_at)
+                    SELECT DISTINCT group_name, '', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP 
+                    FROM configs 
+                    WHERE group_name IS NOT NULL AND group_name != ''
+                """))
 

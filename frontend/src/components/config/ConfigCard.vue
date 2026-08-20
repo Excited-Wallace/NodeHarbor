@@ -39,8 +39,18 @@
       </div>
     </div>
 
-    <!-- 状态徽章栏：定时更新标识与管理员可见性标识 -->
-    <div class="card-badges" v-if="config.auto_update || showActions">
+    <!-- 状态徽章栏：所属分组、定时更新标识与管理员可见性标识 -->
+    <div class="card-badges">
+      <!-- 所属分组标签 (默认展示) -->
+      <el-tag
+        size="small"
+        effect="plain"
+        class="group-tag"
+      >
+        <el-icon class="badge-icon"><Folder /></el-icon>
+        <span>{{ config.group_name || '默认分组' }}</span>
+      </el-tag>
+
       <!-- 定时自动更新状态徽章 (附带悬浮 Tooltip 提示详情) -->
       <el-tooltip
         v-if="config.auto_update"
@@ -99,7 +109,7 @@
             size="small" 
             @click="$emit('edit', config.id)" 
             :icon="Edit"
-            class="action-btn"
+            class="action-btn edit-action-btn"
           >
             编辑
           </el-button>
@@ -156,7 +166,7 @@
 /**
  * 引入图标与 API
  */
-import { Edit, Delete, Download, Link, View, Timer } from '@element-plus/icons-vue'
+import { Edit, Delete, Download, Link, View, Timer, Folder } from '@element-plus/icons-vue'
 import { downloadConfig } from '../../api/configs'
 import { ElMessage } from 'element-plus'
 
@@ -358,6 +368,17 @@ const copySubLink = () => {
   margin-bottom: 10px;
 }
 
+.group-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 4px;
+  font-weight: 500;
+  background: #f0f9ff;
+  color: var(--color-primary, #0284c7);
+  border-color: #bae6fd;
+}
+
 .auto-update-tag {
   display: inline-flex;
   align-items: center;
@@ -445,5 +466,26 @@ const copySubLink = () => {
   justify-content: center;
   box-sizing: border-box;
   height: 28px;
+}
+
+.edit-action-btn {
+  background: var(--gradient-primary, linear-gradient(135deg, #0284c7 0%, #10b981 100%)) !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25) !important;
+}
+
+.edit-action-btn:hover {
+  background: var(--gradient-hover, linear-gradient(135deg, #0ea5e9 0%, #34d399 100%)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.35) !important;
+}
+
+.edit-action-btn span,
+.edit-action-btn .el-icon,
+.edit-action-btn i {
+  color: #ffffff !important;
+  fill: #ffffff !important;
 }
 </style>

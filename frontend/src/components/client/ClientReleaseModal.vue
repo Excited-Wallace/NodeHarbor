@@ -568,11 +568,11 @@ onUnmounted(() => {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-card, #1a1d24) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: #ffffff !important;
+  border: 1px solid var(--border-color, #e2e8f0) !important;
   border-radius: 16px !important;
   overflow: hidden !important;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(99, 102, 241, 0.2) !important;
+  box-shadow: var(--shadow-lg) !important;
 }
 
 :deep(.custom-release-dialog .el-dialog__header) {
@@ -581,8 +581,8 @@ onUnmounted(() => {
 
 :deep(.custom-release-dialog .el-dialog__body) {
   padding: 0 !important;
-  background: var(--bg-card, #1a1d24) !important;
-  color: #ffffff !important;
+  background: #ffffff !important;
+  color: var(--text-primary, #0f172a) !important;
   flex: 1 !important;
   display: flex !important;
   flex-direction: column !important;
@@ -597,8 +597,8 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
 }
 
 .header-left {
@@ -611,9 +611,9 @@ onUnmounted(() => {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: rgba(99, 102, 241, 0.15);
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  color: #818cf8;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  color: var(--color-primary, #0284c7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -631,12 +631,12 @@ onUnmounted(() => {
   margin: 0;
   font-size: 17px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary, #0f172a);
 }
 
 .version-tag {
   padding: 2px 6px;
-  background: #6366f1;
+  background: var(--color-primary, #0284c7);
   color: #ffffff;
   border-radius: 4px;
   font-size: 11px;
@@ -645,9 +645,9 @@ onUnmounted(() => {
 
 .cache-indicator-tag {
   padding: 2px 6px;
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #34d399;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #059669;
   border-radius: 4px;
   font-size: 10px;
 }
@@ -655,7 +655,7 @@ onUnmounted(() => {
 .repo-sub {
   margin: 2px 0 0;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--text-muted, #94a3b8);
 }
 
 .header-actions {
@@ -667,7 +667,7 @@ onUnmounted(() => {
 .close-icon-btn {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--text-secondary, #64748b);
   font-size: 18px;
   cursor: pointer;
   padding: 4px 8px;
@@ -677,8 +677,8 @@ onUnmounted(() => {
 }
 
 .close-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: #f1f5f9;
+  color: var(--text-primary, #0f172a);
 }
 
 .modal-loading-state,
@@ -704,15 +704,15 @@ onUnmounted(() => {
 }
 
 .modal-body-scrollable::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
+  background: #cbd5e1;
   border-radius: 4px;
 }
 
 /* 更新说明折叠板 */
 .changelog-card {
   flex-shrink: 0;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #f8fafc;
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -723,7 +723,7 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.02);
+  background: #f1f5f9;
 }
 
 .changelog-title {
@@ -732,19 +732,20 @@ onUnmounted(() => {
   gap: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: #a5b4fc;
+  color: var(--color-primary, #0284c7);
 }
 
 .expand-indicator {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--text-muted, #94a3b8);
 }
 
 .changelog-content {
   padding: 12px 14px;
   max-height: 140px;
   overflow-y: auto;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--border-color, #e2e8f0);
+  background: #ffffff;
 }
 
 .changelog-content pre {
@@ -754,7 +755,7 @@ onUnmounted(() => {
   font-family: inherit;
   font-size: 12px;
   line-height: 1.5;
-  color: #cbd5e1;
+  color: var(--text-secondary, #475569);
 }
 
 /* 过滤工具栏 (移动端横向滑动) */
@@ -783,9 +784,9 @@ onUnmounted(() => {
 .filter-tab-btn {
   padding: 5px 10px;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  color: #94a3b8;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: #f8fafc;
+  color: var(--text-secondary, #64748b);
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -794,9 +795,9 @@ onUnmounted(() => {
 }
 
 .filter-tab-btn.active {
-  background: #6366f1;
+  background: var(--color-primary, #0284c7);
   color: #ffffff;
-  border-color: #6366f1;
+  border-color: var(--color-primary, #0284c7);
   font-weight: 600;
 }
 
@@ -810,8 +811,8 @@ onUnmounted(() => {
   flex-shrink: 0;
   padding: 12px 16px;
   border-radius: 10px;
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -832,7 +833,7 @@ onUnmounted(() => {
 
 .file-name {
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-primary, #0f172a);
   font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -841,12 +842,12 @@ onUnmounted(() => {
 
 .status-tip {
   font-size: 11px;
-  color: #818cf8;
+  color: var(--color-primary, #0284c7);
 }
 
 .download-speed {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--text-muted, #94a3b8);
   font-family: monospace;
 }
 
@@ -854,9 +855,10 @@ onUnmounted(() => {
 .assets-table-container {
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.2);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
 }
 
 .table-header-row.admin-layout,
@@ -877,17 +879,21 @@ onUnmounted(() => {
 
 .table-header-row {
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
   font-size: 12px;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--text-secondary, #64748b);
 }
 
 .asset-row {
   padding: 12px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border-color-light, #f1f5f9);
   transition: background 0.2s ease;
+}
+
+.asset-row:hover {
+  background: #f0f9ff;
 }
 
 .asset-row:last-child {
@@ -925,7 +931,7 @@ onUnmounted(() => {
 .file-title-full {
   font-size: 13px;
   font-weight: 600;
-  color: #f8fafc;
+  color: var(--text-primary, #0f172a);
   word-break: break-all;
   overflow-wrap: anywhere;
   white-space: normal;
@@ -937,34 +943,35 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted, #64748b);
 }
 
 .mobile-size {
-  color: #a5b4fc;
+  color: var(--color-primary, #0284c7);
   font-family: monospace;
 }
 
 .size-text {
   font-family: monospace;
   font-size: 12px;
-  color: #cbd5e1;
+  color: var(--text-secondary, #475569);
 }
 
 .status-badge-cached {
   font-size: 11px;
-  color: #34d399;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
   padding: 2px 6px;
   border-radius: 4px;
+  font-weight: 500;
 }
 
 .status-badge-uncached {
   font-size: 11px;
-  color: #94a3b8;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted, #94a3b8);
+  background: #f1f5f9;
+  border: 1px solid var(--border-color, #e2e8f0);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -983,15 +990,20 @@ onUnmounted(() => {
 }
 
 .user-download-btn {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, #0284c7 0%, #10b981 100%));
   border: none;
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+}
+
+.user-download-btn:hover {
+  background: var(--gradient-hover, linear-gradient(135deg, #0ea5e9 0%, #34d399 100%));
 }
 
 .empty-assets {
   padding: 30px;
   text-align: center;
-  color: #94a3b8;
+  color: var(--text-muted, #94a3b8);
   font-size: 13px;
 }
 </style>

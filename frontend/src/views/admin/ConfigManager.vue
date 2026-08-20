@@ -2,7 +2,12 @@
   ConfigManager.vue - 配置文件管理页面（管理员视角）
   
   页面作用：
-    - 展示所有已上传的 Clash/代理配置文件列表（包含普通用户可见性、定时更新策略及状态）
+    - 展示所有已上传的 Clash/代理配置文件列表（包含分组信息、普通用户可见性、定时更新策略及状态）
+    - 自由独立分组管理：
+      - 支持管理员独立新建分组、编辑分组信息（名称、描述、排序权重）和删除分组（关联配置安全迁移）
+      - 提供专门的“分组管理”控制中心面板
+      - 顶部支持按分组快速切换 Tab/Pill 筛选与实时统计
+      - 上传/导入配置及单项/批量修改时可快速选择已有分组或点击快捷新建分组
     - 快速切换配置对普通用户的可见性 (is_public Switch 开关实时生效)
     - 针对移动端深度优化：
       - 移动端模式下自动采用触控友好的卡片流布局 (Mobile Cards)
@@ -17,22 +22,98 @@
     <div class="header-actions">
       <div class="header-titles">
         <h2 class="page-title">配置管理</h2>
-        <p class="page-subtitle">管理所有代理订阅配置文件、普通用户可见性与定时自动同步调度策略。</p>
+        <p class="page-subtitle">管理所有代理订阅配置文件、自由分组、普通用户可见性与定时自动同步调度策略。</p>
       </div>
-      <el-button type="primary" @click="openUploadDialog" :icon="Upload" class="upload-top-btn">
-        上传 / 导入配置
-      </el-button>
+      <div class="header-btns">
+        <el-button 
+          v-if="selectedRows.length > 0 && !deviceStore.isMobile" 
+          type="warning" 
+          plain 
+          :icon="Folder" 
+          @click="openBatchGroupDialog"
+        >
+          批量移动 ({{ selectedRows.length }})
+        </el-button>
+        <el-button 
+          type="info" 
+          plain 
+          :icon="Operation" 
+          @click="openGroupManageDialog"
+        >
+          分组管理
+        </el-button>
+        <el-button 
+          type="success" 
+          plain 
+          :icon="Plus" 
+          @click="openCreateGroupDialog"
+        >
+          新建分组
+        </el-button>
+        <el-button type="primary" @click="openUploadDialog" :icon="Upload" class="upload-top-btn">
+          上传 / 导入配置
+        </el-button>
+      </div>
+    </div>
+
+    <!-- 分组过滤与搜索筛选工具栏 -->
+    <div class="filter-toolbar">
+      <!-- 左侧分组快速筛选 Tabs / Pills -->
+      <div class="group-pills-wrapper">
+        <div
+          class="group-pill"
+          :class="{ active: selectedGroup === 'all' }"
+          @click="selectedGroup = 'all'"
+        >
+          <span>全部</span>
+          <span class="pill-badge">{{ configStore.configList.length }}</span>
+        </div>
+        <div
+          v-for="grp in groupStats"
+          :key="grp.name"
+          class="group-pill"
+          :class="{ active: selectedGroup === grp.name }"
+          @click="selectedGroup = grp.name"
+        >
+          <el-icon class="pill-icon"><Folder /></el-icon>
+          <span>{{ grp.name }}</span>
+          <span class="pill-badge">{{ grp.count }}</span>
+        </div>
+
+        <!-- 快速新建分组 Pill 按钮 -->
+        <div class="group-pill add-group-pill" @click="openCreateGroupDialog">
+          <el-icon><Plus /></el-icon>
+          <span>新建分组</span>
+        </div>
+      </div>
+
+      <!-- 右侧搜索输入框 -->
+      <div class="filter-search-box">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索配置名称、描述或分组..."
+          clearable
+          :prefix-icon="Search"
+          class="search-input"
+        />
+      </div>
     </div>
 
     <!-- 1. 桌面端视图：完整数据表格 (Desktop Table) -->
     <el-table
       v-if="!deviceStore.isMobile"
+      ref="tableRef"
       v-loading="configStore.loading"
-      :data="configStore.configList"
+      :data="filteredConfigs"
       class="custom-table"
-      empty-text="暂无配置文件"
+      empty-text="暂无匹配的配置文件"
+      @selection-change="handleSelectionChange"
     >
-      <el-table-column prop="name" label="配置名称" min-width="150">
+      <!-- 多选列 -->
+      <el-table-column type="selection" width="45" align="center" />
+
+      <!-- 配置名称（宽度自适应，内嵌订阅导入标签） -->
+      <el-table-column prop="name" label="配置名称" min-width="200">
         <template #default="scope">
           <div class="name-cell">
             <span class="config-title">{{ scope.row.name }}</span>
@@ -42,11 +123,27 @@
           </div>
         </template>
       </el-table-column>
+
+      <!-- 所属分组列：展示分组标签与快捷修改 -->
+      <el-table-column prop="group_name" label="所属分组" width="130">
+        <template #default="scope">
+          <div class="group-cell" @click="openChangeGroupDialog(scope.row)">
+            <el-tag size="small" effect="plain" class="admin-group-tag">
+              <el-icon><Folder /></el-icon>
+              <span>{{ scope.row.group_name || '默认分组' }}</span>
+            </el-tag>
+            <el-tooltip content="修改分组" placement="top">
+              <el-button link :icon="Edit" size="small" class="group-quick-edit-btn" />
+            </el-tooltip>
+          </div>
+        </template>
+      </el-table-column>
       
-      <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
+      <!-- 配置描述 -->
+      <el-table-column prop="description" label="描述" min-width="140" show-overflow-tooltip />
       
       <!-- 普通用户可见性列：支持管理员一键快速切换 -->
-      <el-table-column label="普通用户可见" width="130" align="center">
+      <el-table-column label="用户可见" width="100" align="center">
         <template #default="scope">
           <el-switch
             :model-value="scope.row.is_public"
@@ -60,7 +157,7 @@
       </el-table-column>
 
       <!-- 定时更新状态列 -->
-      <el-table-column label="定时更新" min-width="160">
+      <el-table-column label="定时更新" width="115">
         <template #default="scope">
           <div v-if="scope.row.auto_update" class="schedule-cell">
             <el-tooltip placement="top" effect="dark">
@@ -90,21 +187,36 @@
         </template>
       </el-table-column>
 
-      <el-table-column prop="file_size" label="大小" width="90" align="right">
+      <!-- 大小 -->
+      <el-table-column prop="file_size" label="大小" width="75" align="right">
         <template #default="scope">
           {{ formatSize(scope.row.file_size) }}
         </template>
       </el-table-column>
       
-      <el-table-column prop="updated_at" label="最后修改" width="160">
+      <!-- 最后修改 -->
+      <el-table-column prop="updated_at" label="最后修改" width="135">
         <template #default="scope">
           {{ formatDate(scope.row.updated_at || scope.row.created_at) }}
         </template>
       </el-table-column>
       
-      <el-table-column label="操作" width="220" fixed="right">
+      <!-- 操作列（右对齐展示完整功能按钮） -->
+      <el-table-column label="操作" width="220" align="right">
         <template #default="scope">
           <div class="table-actions">
+            <!-- 分组修改按钮 -->
+            <el-tooltip content="调整配置所属分组" placement="top">
+              <el-button 
+                type="info" 
+                link 
+                :icon="Folder" 
+                @click="openChangeGroupDialog(scope.row)"
+              >
+                分组
+              </el-button>
+            </el-tooltip>
+
             <!-- 若为订阅导入配置，提供立即同步和定时设置按钮 -->
             <template v-if="scope.row.subscription_url">
               <el-tooltip content="立即从原订阅链接同步更新" placement="top">
@@ -130,7 +242,13 @@
               </el-tooltip>
             </template>
             
-            <el-button type="primary" link @click="editConfig(scope.row.id)" :icon="Edit">
+            <el-button
+              type="primary"
+              size="small"
+              class="edit-action-btn"
+              @click="editConfig(scope.row.id)"
+              :icon="Edit"
+            >
               编辑
             </el-button>
             <el-button type="danger" link @click="confirmDelete(scope.row)" :icon="Delete">
@@ -143,12 +261,12 @@
 
     <!-- 2. 移动端专属视图：卡片列表流 (Mobile Card View) -->
     <div v-else class="mobile-config-list" v-loading="configStore.loading">
-      <div v-if="configStore.configList.length === 0" class="empty-box">
-        <el-empty description="暂无配置文件" />
+      <div v-if="filteredConfigs.length === 0" class="empty-box">
+        <el-empty description="暂无匹配的配置文件" />
       </div>
 
       <div 
-        v-for="item in configStore.configList" 
+        v-for="item in filteredConfigs" 
         :key="item.id" 
         class="admin-config-card"
       >
@@ -156,6 +274,9 @@
         <div class="card-top-row">
           <div class="card-title-group">
             <h4 class="card-name">{{ item.name }}</h4>
+            <el-tag size="small" effect="plain" class="mobile-group-badge">
+              <el-icon><Folder /></el-icon> {{ item.group_name || '默认分组' }}
+            </el-tag>
             <el-tag v-if="item.subscription_url" size="small" type="info" effect="plain">
               订阅
             </el-tag>
@@ -202,6 +323,18 @@
           <span class="card-date">{{ formatDate(item.updated_at || item.created_at) }}</span>
           
           <div class="card-actions">
+            <!-- 调整分组按钮 -->
+            <el-button
+              type="info"
+              size="small"
+              plain
+              :icon="Folder"
+              @click="openChangeGroupDialog(item)"
+              class="mobile-action-btn"
+            >
+              分组
+            </el-button>
+
             <template v-if="item.subscription_url">
               <el-button 
                 type="success" 
@@ -229,10 +362,9 @@
             <el-button 
               type="primary" 
               size="small" 
-              plain
+              class="edit-action-btn mobile-action-btn"
               @click="editConfig(item.id)" 
               :icon="Edit"
-              class="mobile-action-btn"
             >
               编辑
             </el-button>
@@ -262,6 +394,30 @@
       <el-form :model="uploadForm" ref="formRef" label-position="top">
         <el-form-item label="配置名称" required>
           <el-input v-model="uploadForm.name" placeholder="例如：优质节点订阅" />
+        </el-form-item>
+
+        <!-- 所属分组设置：支持从已有分组中选择，或直接输入新分组名称 -->
+        <el-form-item label="所属分组" required>
+          <div class="group-select-row">
+            <el-select
+              v-model="uploadForm.group_name"
+              filterable
+              allow-create
+              default-first-option
+              placeholder="选择已有分组或直接输入新分组"
+              style="flex: 1;"
+            >
+              <el-option
+                v-for="grp in configStore.groups"
+                :key="grp"
+                :label="grp"
+                :value="grp"
+              />
+            </el-select>
+            <el-button type="success" plain :icon="Plus" @click="openCreateGroupDialog">
+              新建分组
+            </el-button>
+          </div>
         </el-form-item>
         
         <el-form-item label="配置描述">
@@ -443,7 +599,238 @@
       </template>
     </el-dialog>
 
-    <!-- 3. 删除确认对话框 -->
+    <!-- 3. 调整分组对话框 (支持单项与批量操作) -->
+    <el-dialog
+      v-model="groupDialog.visible"
+      :title="groupDialog.isBatch ? `批量调整分组 (已选 ${groupDialog.selectedIds.length} 项)` : `调整所属分组 - ${groupDialog.config?.name || ''}`"
+      :width="deviceStore.isMobile ? '95%' : '480px'"
+      class="custom-dialog"
+    >
+      <el-form label-position="top">
+        <el-form-item label="目标分组名称" required>
+          <div class="group-select-row">
+            <el-select
+              v-model="groupDialog.group_name"
+              filterable
+              allow-create
+              default-first-option
+              placeholder="选择已有分组或输入新分组名称"
+              style="flex: 1;"
+            >
+              <el-option
+                v-for="grp in configStore.groups"
+                :key="grp"
+                :label="grp"
+                :value="grp"
+              />
+            </el-select>
+            <el-button type="success" plain :icon="Plus" @click="openCreateGroupDialog">
+              新建
+            </el-button>
+          </div>
+        </el-form-item>
+
+        <!-- 快捷选择已有分组 -->
+        <div class="preset-groups-box" v-if="configStore.groups.length > 0">
+          <span class="preset-title">点击快速选取已有分组:</span>
+          <div class="preset-tags">
+            <el-tag
+              v-for="grp in configStore.groups"
+              :key="grp"
+              size="small"
+              :effect="groupDialog.group_name === grp ? 'dark' : 'plain'"
+              class="clickable-preset-tag"
+              @click="groupDialog.group_name = grp"
+            >
+              <el-icon><Folder /></el-icon>
+              {{ grp }}
+            </el-tag>
+          </div>
+        </div>
+      </el-form>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="groupDialog.visible = false">取消</el-button>
+          <el-button type="primary" @click="submitGroupChange" :loading="groupDialog.submitting">
+            确认修改
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 4. 新建分组对话框 (独立创建) -->
+    <el-dialog
+      v-model="createGroupDialog.visible"
+      title="新建配置分组"
+      :width="deviceStore.isMobile ? '95%' : '460px'"
+      class="custom-dialog"
+    >
+      <el-form :model="createGroupDialog.form" label-position="top">
+        <el-form-item label="分组名称" required>
+          <el-input 
+            v-model="createGroupDialog.form.name" 
+            placeholder="例如：香港专线、VIP节点、自建节点" 
+            maxlength="64"
+            show-word-limit
+          />
+        </el-form-item>
+        <el-form-item label="分组描述 (选填)">
+          <el-input 
+            v-model="createGroupDialog.form.description" 
+            type="textarea" 
+            placeholder="关于此分组节点的说明或备注..." 
+            :rows="3"
+            maxlength="200"
+            show-word-limit
+          />
+        </el-form-item>
+        <el-form-item label="排序权重">
+          <el-input-number 
+            v-model="createGroupDialog.form.sort_order" 
+            :min="0" 
+            :max="999" 
+            style="width: 100%;"
+          />
+          <span class="setting-hint">数字越小展示越靠前 (默认: 0)</span>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="createGroupDialog.visible = false">取消</el-button>
+          <el-button type="primary" @click="submitCreateGroup" :loading="createGroupDialog.submitting">
+            立即创建
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 5. 编辑分组对话框 -->
+    <el-dialog
+      v-model="editGroupDialog.visible"
+      :title="`编辑分组 - ${editGroupDialog.group?.name || ''}`"
+      :width="deviceStore.isMobile ? '95%' : '460px'"
+      class="custom-dialog"
+    >
+      <el-form :model="editGroupDialog.form" label-position="top">
+        <el-form-item label="分组名称" required>
+          <el-input 
+            v-model="editGroupDialog.form.name" 
+            placeholder="请输入分组名称" 
+            :disabled="editGroupDialog.group?.name === '默认分组'"
+            maxlength="64"
+            show-word-limit
+          />
+          <span class="setting-hint" v-if="editGroupDialog.group?.name === '默认分组'">
+            系统默认分组不可修改名称
+          </span>
+          <span class="setting-hint" v-else>
+            修改分组名称后，该分组下的所有已有配置将自动同步至新名称。
+          </span>
+        </el-form-item>
+        <el-form-item label="分组描述">
+          <el-input 
+            v-model="editGroupDialog.form.description" 
+            type="textarea" 
+            placeholder="分组说明..." 
+            :rows="3"
+            maxlength="200"
+            show-word-limit
+          />
+        </el-form-item>
+        <el-form-item label="排序权重">
+          <el-input-number 
+            v-model="editGroupDialog.form.sort_order" 
+            :min="0" 
+            :max="999" 
+            style="width: 100%;"
+          />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="editGroupDialog.visible = false">取消</el-button>
+          <el-button type="primary" @click="submitEditGroup" :loading="editGroupDialog.submitting">
+            保存修改
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 6. 分组管理中心弹窗 -->
+    <el-dialog
+      v-model="groupManageDialog.visible"
+      title="配置分组管理中心"
+      :width="deviceStore.isMobile ? '95%' : '750px'"
+      class="custom-dialog"
+    >
+      <div class="group-manage-header">
+        <span class="group-manage-tip">
+          共 {{ configStore.groupList.length }} 个独立分组，可自由添加、编辑或删除分组。
+        </span>
+        <el-button type="primary" size="small" :icon="Plus" @click="openCreateGroupDialog">
+          新建分组
+        </el-button>
+      </div>
+
+      <el-table :data="configStore.groupList" class="group-manage-table" empty-text="暂无分组">
+        <el-table-column prop="name" label="分组名称" min-width="130">
+          <template #default="scope">
+            <div class="group-name-cell">
+              <el-tag size="small" effect="plain" class="admin-group-tag">
+                <el-icon><Folder /></el-icon>
+                <span>{{ scope.row.name }}</span>
+              </el-tag>
+              <el-tag v-if="scope.row.name === '默认分组'" size="small" type="info">系统</el-tag>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="description" label="描述" min-width="150" show-overflow-tooltip>
+          <template #default="scope">
+            {{ scope.row.description || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="count" label="配置数" width="90" align="center">
+          <template #default="scope">
+            <el-badge :value="scope.row.count" class="count-badge" type="primary" />
+          </template>
+        </el-table-column>
+        <el-table-column prop="sort_order" label="排序" width="80" align="center" />
+        <el-table-column label="操作" width="140" align="right">
+          <template #default="scope">
+            <el-button 
+              type="primary" 
+              size="small" 
+              class="edit-action-btn"
+              :icon="Edit" 
+              @click="openEditGroupDialog(scope.row)"
+            >
+              编辑
+            </el-button>
+            <el-button 
+              type="danger" 
+              link 
+              size="small" 
+              :icon="Delete" 
+              :disabled="scope.row.name === '默认分组'"
+              @click="confirmDeleteGroup(scope.row)"
+            >
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button type="primary" @click="groupManageDialog.visible = false">完成</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 7. 删除配置确认对话框 -->
     <ConfirmDialog
       v-model:visible="deleteDialog.visible"
       title="删除配置"
@@ -453,6 +840,17 @@
       @confirm="handleDelete"
       @cancel="deleteDialog.visible = false"
     />
+
+    <!-- 8. 删除分组确认对话框 -->
+    <ConfirmDialog
+      v-model:visible="groupDeleteDialog.visible"
+      title="删除配置分组"
+      :message="`确定要删除分组“${groupDeleteDialog.group?.name}”吗？该分组下的 ${groupDeleteDialog.group?.count || 0} 个配置将自动安全转移至【默认分组】。`"
+      type="danger"
+      confirm-text="删除分组"
+      @confirm="handleDeleteGroup"
+      @cancel="groupDeleteDialog.visible = false"
+    />
   </div>
 </template>
 
@@ -460,7 +858,7 @@
 /**
  * 引入依赖与 API
  */
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConfigStore } from '../../stores/config'
 import { useDeviceStore } from '../../stores/device'
@@ -468,15 +866,36 @@ import {
   uploadConfig, 
   updateConfigVisibility, 
   updateConfigSchedule, 
-  syncConfig 
+  syncConfig,
+  updateConfigGroup,
+  batchUpdateConfigGroup
 } from '../../api/configs'
 import { ElMessage } from 'element-plus'
-import { Upload, Edit, Delete, UploadFilled, Timer, Refresh } from '@element-plus/icons-vue'
+import { 
+  Upload, 
+  Edit, 
+  Delete, 
+  UploadFilled, 
+  Timer, 
+  Refresh, 
+  Folder, 
+  Search, 
+  Plus, 
+  Operation 
+} from '@element-plus/icons-vue'
 import ConfirmDialog from '../../components/common/ConfirmDialog.vue'
 
 const router = useRouter()
 const configStore = useConfigStore()
 const deviceStore = useDeviceStore()
+
+// 表格引用与多选状态
+const tableRef = ref(null)
+const selectedRows = ref([])
+
+// 分组筛选与搜索状态
+const selectedGroup = ref('all')
+const searchKeyword = ref('')
 
 // 上传弹窗状态
 const showUploadDialog = ref(false)
@@ -487,6 +906,7 @@ const selectedFile = ref(null)
 const uploadForm = reactive({
   name: '',
   description: '',
+  group_name: '默认分组',
   is_public: true,
   method: 'file',
   url: '',
@@ -509,11 +929,295 @@ const scheduleDialog = reactive({
   }
 })
 
-// 删除对话框状态
+// 分组修改弹窗状态（支持单项或批量）
+const groupDialog = reactive({
+  visible: false,
+  config: null,
+  isBatch: false,
+  selectedIds: [],
+  group_name: '默认分组',
+  submitting: false
+})
+
+// 新建分组弹窗状态
+const createGroupDialog = reactive({
+  visible: false,
+  submitting: false,
+  form: {
+    name: '',
+    description: '',
+    sort_order: 0
+  }
+})
+
+// 编辑分组弹窗状态
+const editGroupDialog = reactive({
+  visible: false,
+  group: null,
+  submitting: false,
+  form: {
+    id: null,
+    name: '',
+    description: '',
+    sort_order: 0
+  }
+})
+
+// 分组管理中心面板状态
+const groupManageDialog = reactive({
+  visible: false
+})
+
+// 删除配置对话框状态
 const deleteDialog = reactive({
   visible: false,
   config: null
 })
+
+// 删除分组对话框状态
+const groupDeleteDialog = reactive({
+  visible: false,
+  group: null
+})
+
+/**
+ * 计算各个分组的配置数量统计列表 (直接基于 store 中的 groupList 与 configList 综合计算)
+ */
+const groupStats = computed(() => {
+  const map = {}
+  
+  // 1. 先统计已有配置的计数
+  configStore.configList.forEach(item => {
+    const grp = item.group_name || '默认分组'
+    map[grp] = (map[grp] || 0) + 1
+  })
+
+  // 2. 将 groupList 中即使配置数量为 0 的分组也包含进来
+  configStore.groupList.forEach(g => {
+    if (g.name && map[g.name] === undefined) {
+      map[g.name] = 0
+    }
+  })
+
+  const list = Object.keys(map).map(name => ({
+    name,
+    count: map[name]
+  }))
+  
+  list.sort((a, b) => {
+    if (a.name === '默认分组') return -1
+    if (b.name === '默认分组') return 1
+    return a.name.localeCompare(b.name)
+  })
+  return list
+})
+
+/**
+ * 响应式过滤后的配置文件列表（结合分组 Tab 筛选与关键词搜索）
+ */
+const filteredConfigs = computed(() => {
+  let list = configStore.configList
+
+  // 1. 分组筛选
+  if (selectedGroup.value !== 'all') {
+    list = list.filter(item => (item.group_name || '默认分组') === selectedGroup.value)
+  }
+
+  // 2. 关键词搜索
+  if (searchKeyword.value.trim()) {
+    const kw = searchKeyword.value.trim().toLowerCase()
+    list = list.filter(item => {
+      const nameMatch = item.name && item.name.toLowerCase().includes(kw)
+      const descMatch = item.description && item.description.toLowerCase().includes(kw)
+      const groupMatch = item.group_name && item.group_name.toLowerCase().includes(kw)
+      return nameMatch || descMatch || groupMatch
+    })
+  }
+
+  return list
+})
+
+/**
+ * 表格多选发生变化
+ */
+const handleSelectionChange = (rows) => {
+  selectedRows.value = rows
+}
+
+/**
+ * 打开新建分组弹窗
+ */
+const openCreateGroupDialog = () => {
+  createGroupDialog.form.name = ''
+  createGroupDialog.form.description = ''
+  createGroupDialog.form.sort_order = 0
+  createGroupDialog.visible = true
+}
+
+/**
+ * 提交新建分组
+ */
+const submitCreateGroup = async () => {
+  const name = createGroupDialog.form.name.trim()
+  if (!name) {
+    ElMessage.warning('请输入分组名称')
+    return
+  }
+
+  createGroupDialog.submitting = true
+  try {
+    const newGrp = await configStore.createNewGroup({
+      name,
+      description: createGroupDialog.form.description.trim() || undefined,
+      sort_order: createGroupDialog.form.sort_order || 0
+    })
+    createGroupDialog.visible = false
+    
+    // 如果当前正在上传配置或调整分组弹窗中，自动选中新建的分组
+    if (showUploadDialog.value) {
+      uploadForm.group_name = newGrp.name
+    }
+    if (groupDialog.visible) {
+      groupDialog.group_name = newGrp.name
+    }
+  } catch (error) {
+    // 错误在 store 中已提示
+  } finally {
+    createGroupDialog.submitting = false
+  }
+}
+
+/**
+ * 打开分组管理对话框
+ */
+const openGroupManageDialog = () => {
+  configStore.fetchGroups()
+  groupManageDialog.visible = true
+}
+
+/**
+ * 打开编辑分组对话框
+ * @param {Object} group 分组对象
+ */
+const openEditGroupDialog = (group) => {
+  editGroupDialog.group = group
+  editGroupDialog.form.id = group.id
+  editGroupDialog.form.name = group.name
+  editGroupDialog.form.description = group.description || ''
+  editGroupDialog.form.sort_order = group.sort_order || 0
+  editGroupDialog.visible = true
+}
+
+/**
+ * 提交编辑分组
+ */
+const submitEditGroup = async () => {
+  if (!editGroupDialog.form.id) {
+    ElMessage.warning('分组 ID 缺失')
+    return
+  }
+  const name = editGroupDialog.form.name.trim()
+  if (!name) {
+    ElMessage.warning('分组名称不能为空')
+    return
+  }
+
+  editGroupDialog.submitting = true
+  try {
+    await configStore.updateExistingGroup(editGroupDialog.form.id, {
+      name,
+      description: editGroupDialog.form.description.trim(),
+      sort_order: editGroupDialog.form.sort_order || 0
+    })
+    editGroupDialog.visible = false
+  } catch (error) {
+    // 错误在 store 中已提示
+  } finally {
+    editGroupDialog.submitting = false
+  }
+}
+
+/**
+ * 打开删除分组确认弹窗
+ * @param {Object} group 分组对象
+ */
+const confirmDeleteGroup = (group) => {
+  if (group.name === '默认分组') {
+    ElMessage.warning('系统【默认分组】不可删除')
+    return
+  }
+  groupDeleteDialog.group = group
+  groupDeleteDialog.visible = true
+}
+
+/**
+ * 执行删除分组
+ */
+const handleDeleteGroup = async () => {
+  if (!groupDeleteDialog.group?.id) return
+  try {
+    await configStore.removeGroup(groupDeleteDialog.group.id)
+    groupDeleteDialog.visible = false
+  } catch (error) {
+    // 错误在 store 中已处理
+  }
+}
+
+/**
+ * 打开单项修改分组对话框
+ * @param {Object} row 配置项
+ */
+const openChangeGroupDialog = (row) => {
+  groupDialog.config = row
+  groupDialog.isBatch = false
+  groupDialog.selectedIds = []
+  groupDialog.group_name = row.group_name || '默认分组'
+  groupDialog.visible = true
+}
+
+/**
+ * 打开批量修改分组对话框
+ */
+const openBatchGroupDialog = () => {
+  if (selectedRows.value.length === 0) {
+    ElMessage.warning('请先勾选需要移动分组的配置文件')
+    return
+  }
+  groupDialog.config = null
+  groupDialog.isBatch = true
+  groupDialog.selectedIds = selectedRows.value.map(r => r.id)
+  groupDialog.group_name = '默认分组'
+  groupDialog.visible = true
+}
+
+/**
+ * 提交修改分组（单项或批量）
+ */
+const submitGroupChange = async () => {
+  const targetGroup = (groupDialog.group_name || '').trim() || '默认分组'
+  groupDialog.submitting = true
+
+  try {
+    if (groupDialog.isBatch) {
+      // 批量调整
+      const res = await batchUpdateConfigGroup(groupDialog.selectedIds, targetGroup)
+      ElMessage.success(`已成功将 ${res.data?.updated_count || groupDialog.selectedIds.length} 个配置移动至【${targetGroup}】`)
+    } else if (groupDialog.config) {
+      // 单项调整
+      await updateConfigGroup(groupDialog.config.id, targetGroup)
+      groupDialog.config.group_name = targetGroup
+      ElMessage.success(`已将【${groupDialog.config.name}】调整为【${targetGroup}】`)
+    }
+
+    groupDialog.visible = false
+    await configStore.fetchConfigs()
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '修改分组失败，请重试')
+    console.error('Failed to update config group:', error)
+  } finally {
+    groupDialog.submitting = false
+  }
+}
 
 /**
  * 打开上传配置弹窗并重置表单
@@ -521,6 +1225,7 @@ const deleteDialog = reactive({
 const openUploadDialog = () => {
   uploadForm.name = ''
   uploadForm.description = ''
+  uploadForm.group_name = selectedGroup.value !== 'all' ? selectedGroup.value : '默认分组'
   uploadForm.is_public = true
   uploadForm.method = 'file'
   uploadForm.url = ''
@@ -564,6 +1269,7 @@ const submitUpload = async () => {
     const formData = new FormData()
     formData.append('name', uploadForm.name)
     formData.append('description', uploadForm.description || '')
+    formData.append('group_name', (uploadForm.group_name || '').trim() || '默认分组')
     formData.append('is_public', String(uploadForm.is_public))
     
     if (uploadForm.method === 'file') {
@@ -776,7 +1482,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
   gap: 12px;
 }
@@ -798,38 +1504,196 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
+.header-btns {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* 分组过滤与搜索工具栏 */
+.filter-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.group-pills-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.group-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.group-pill:hover {
+  border-color: var(--color-primary);
+  color: var(--text-primary);
+}
+
+.group-pill.active {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.add-group-pill {
+  border-style: dashed;
+  color: var(--color-primary);
+  background: rgba(56, 189, 248, 0.04);
+}
+
+.add-group-pill:hover {
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.pill-icon {
+  font-size: 13px;
+}
+
+.pill-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: inherit;
+}
+
+.filter-search-box {
+  min-width: 240px;
+}
+
+.search-input {
+  width: 100%;
+}
+
+:deep(.search-input .el-input__wrapper) {
+  background-color: var(--bg-card);
+  border-radius: 20px;
+}
+
 /* 桌面端表格样式 */
 .custom-table {
   background: var(--bg-card);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   overflow: hidden;
+  width: 100%;
 }
 
 :deep(.el-table) {
-  --el-table-bg-color: transparent;
-  --el-table-tr-bg-color: transparent;
-  --el-table-header-bg-color: rgba(255, 255, 255, 0.02);
+  --el-table-bg-color: var(--bg-card);
+  --el-table-tr-bg-color: var(--bg-card);
+  --el-table-header-bg-color: var(--bg-secondary);
   --el-table-header-text-color: var(--text-secondary);
   --el-table-row-hover-bg-color: var(--bg-hover);
   --el-table-border-color: var(--border-color);
 }
 
+:deep(.el-table th.el-table__cell) {
+  background-color: var(--bg-secondary) !important;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+}
+
+:deep(.el-table td.el-table__cell) {
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+}
+
+:deep(.el-table__fixed-right),
+:deep(.el-table__fixed-right-patch),
+:deep(.el-table__fixed-left) {
+  background-color: var(--bg-card) !important;
+}
+
+:deep(.el-table__fixed-right th.el-table__cell),
+:deep(.el-table__fixed-right-patch) {
+  background-color: var(--bg-secondary) !important;
+}
+
 .name-cell {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .config-title {
   font-weight: 600;
   color: var(--text-primary);
+  word-break: break-word;
+}
+
+.sub-link-tag {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  height: 20px;
+  line-height: 18px;
+  padding: 0 6px;
+  border-radius: 4px;
+}
+
+.group-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.admin-group-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f0f9ff;
+  color: var(--color-primary, #0284c7);
+  border-color: #bae6fd;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.admin-group-tag:hover {
+  background: #e0f2fe;
+  border-color: var(--color-primary, #0284c7);
+}
+
+.group-quick-edit-btn {
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+  padding: 0 !important;
+}
+
+.group-cell:hover .group-quick-edit-btn {
+  opacity: 1;
 }
 
 .table-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .schedule-tag {
@@ -854,7 +1718,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
 }
 
 .card-top-row {
@@ -878,6 +1742,16 @@ onMounted(() => {
   font-weight: 700;
   color: var(--text-primary);
   word-break: break-all;
+}
+
+.mobile-group-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  background: #f0f9ff;
+  color: var(--color-primary, #0284c7);
+  border-color: #bae6fd;
 }
 
 .card-size {
@@ -955,6 +1829,75 @@ onMounted(() => {
   margin: 0 !important;
 }
 
+/* 快捷分组标签选择框 */
+.preset-groups-box {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.preset-title {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.preset-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.clickable-preset-tag {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transition-fast);
+}
+
+.clickable-preset-tag:hover {
+  transform: translateY(-1px);
+  border-color: var(--color-primary);
+}
+
+.group-select-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+/* 分组管理中心面板 */
+.group-manage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.group-manage-tip {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.group-name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.group-manage-table {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
 /* 弹窗与表单样式 */
 .upload-area {
   width: 100%;
@@ -1019,6 +1962,28 @@ onMounted(() => {
   color: var(--text-muted);
 }
 
+.edit-action-btn {
+  background: var(--gradient-primary, linear-gradient(135deg, #0284c7 0%, #10b981 100%)) !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25) !important;
+}
+
+.edit-action-btn:hover {
+  background: var(--gradient-hover, linear-gradient(135deg, #0ea5e9 0%, #34d399 100%)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.35) !important;
+}
+
+.edit-action-btn span,
+.edit-action-btn .el-icon,
+.edit-action-btn i {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
 @media (max-width: 640px) {
   .page-title {
     font-size: 20px;
@@ -1028,6 +1993,13 @@ onMounted(() => {
     align-items: stretch;
   }
   .upload-top-btn {
+    width: 100%;
+  }
+  .filter-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-search-box {
     width: 100%;
   }
   .card-bottom-row {
@@ -1040,3 +2012,4 @@ onMounted(() => {
   }
 }
 </style>
+

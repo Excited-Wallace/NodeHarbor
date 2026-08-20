@@ -23,6 +23,10 @@
         <el-icon><Document /></el-icon>
         <span>配置管理</span>
       </el-menu-item>
+      <el-menu-item index="/admin/users">
+        <el-icon><User /></el-icon>
+        <span>用户管理</span>
+      </el-menu-item>
       <el-menu-item index="/admin/clients">
         <el-icon><Download /></el-icon>
         <span>软件下载</span>
@@ -51,7 +55,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
-import { DataBoard, Document, Download, List } from '@element-plus/icons-vue'
+import { DataBoard, Document, Download, List, User } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const authStore = useAuthStore()

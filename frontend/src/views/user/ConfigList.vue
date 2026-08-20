@@ -2,14 +2,14 @@
   ConfigList.vue - 用户配置文件查看、订阅与下载页面
   
   文件功能说明：
-    - 展示所有可用的代理配置文件（卡片网格自适应布局）
-    - 移动端下自适应为单列流动卡片，完全消除横向溢出
+    - 展示所有可用的代理配置文件（支持自由分组聚合展示与分组 Tab 快速筛选）
+    - 移动端下自适应为单列流动卡片与横向平滑滚动分组栏，完全消除横向溢出
     - 提供配置文件快速下载与一键复制订阅链接功能
     - 提供在线查看配置/订阅详情弹窗（基于 CodeMirror YamlEditor 组件）
     - 针对移动端优化弹窗全宽响应式、订阅栏折行与代码预览区高度自适应
   
   接口调用说明：
-    - configStore.fetchConfigs(): GET /api/configs 获取配置列表
+    - configStore.fetchConfigs(): GET /api/configs 获取配置列表及分组统计
     - getContent(id): GET /api/configs/{id}/content 获取配置文件的完整文本内容
     - downloadConfig(id): GET /api/configs/{id}/download 下载配置文件
 -->
@@ -17,16 +17,97 @@
   <div class="list-container">
     <!-- 页面标题与概览 -->
     <div class="page-header">
-      <div>
+      <div class="header-titles">
         <h2 class="page-title">配置列表</h2>
         <p class="page-subtitle">浏览可用订阅配置，直接查看配置详情或复制订阅链接至客户端。</p>
       </div>
+      <!-- 视图模式切换（仅在有配置且选择全部时有效） -->
+      <div class="view-mode-toggle" v-if="configStore.configList.length > 0 && !deviceStore.isMobile">
+        <el-radio-group v-model="viewMode" size="small">
+          <el-radio-button value="grouped">分组聚合</el-radio-button>
+          <el-radio-button value="flat">平铺网格</el-radio-button>
+        </el-radio-group>
+      </div>
+    </div>
+
+    <!-- 分组过滤与搜索工具栏 -->
+    <div class="filter-toolbar" v-if="configStore.configList.length > 0">
+      <!-- 左侧分组快速筛选 Pills -->
+      <div class="group-pills-wrapper">
+        <div
+          class="group-pill"
+          :class="{ active: selectedGroup === 'all' }"
+          @click="selectedGroup = 'all'"
+        >
+          <span>全部</span>
+          <span class="pill-badge">{{ configStore.configList.length }}</span>
+        </div>
+        <div
+          v-for="grp in groupStats"
+          :key="grp.name"
+          class="group-pill"
+          :class="{ active: selectedGroup === grp.name }"
+          @click="selectedGroup = grp.name"
+        >
+          <el-icon class="pill-icon"><Folder /></el-icon>
+          <span>{{ grp.name }}</span>
+          <span class="pill-badge">{{ grp.count }}</span>
+        </div>
+      </div>
+
+      <!-- 右侧搜索输入框 -->
+      <div class="filter-search-box">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索配置名称或描述..."
+          clearable
+          :prefix-icon="Search"
+          class="search-input"
+        />
+      </div>
     </div>
     
-    <!-- 配置文件卡片网格列表 -->
-    <div class="configs-grid" v-if="configStore.configList.length > 0" v-loading="configStore.loading">
+    <!-- 1. 分组聚合展示视图 (当处于全部且无搜索且 viewMode 为 grouped 时展示) -->
+    <div 
+      v-if="shouldShowGroupedSections" 
+      class="grouped-sections-container"
+      v-loading="configStore.loading"
+    >
+      <div 
+        v-for="groupSection in groupedSectionList" 
+        :key="groupSection.name"
+        class="group-section-block"
+      >
+        <!-- 分组标题横条 -->
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <el-icon class="section-icon"><Folder /></el-icon>
+            <h3 class="section-name">{{ groupSection.name }}</h3>
+            <span class="section-count-badge">{{ groupSection.configs.length }} 个配置</span>
+          </div>
+        </div>
+
+        <!-- 当前分组下的卡片网格 -->
+        <div class="configs-grid">
+          <ConfigCard
+            v-for="config in groupSection.configs"
+            :key="config.id"
+            :config="config"
+            :show-actions="false"
+            @view="openPreviewModal"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 普通/筛选后的卡片网格列表 (当选中特定分组、有搜索关键词或处于平铺模式时展示) -->
+    <div 
+      class="configs-grid" 
+      v-else-if="filteredConfigs.length > 0" 
+      v-loading="configStore.loading"
+    >
       <ConfigCard
-        v-for="config in configStore.configList"
+        v-for="config in filteredConfigs"
         :key="config.id"
         :config="config"
         :show-actions="false"
@@ -36,7 +117,16 @@
     
     <!-- 空状态展示 -->
     <div class="empty-state" v-else-if="!configStore.loading">
-      <el-empty description="暂无可用配置文件" />
+      <el-empty description="暂无符合条件的配置文件">
+        <el-button 
+          v-if="selectedGroup !== 'all' || searchKeyword.trim()" 
+          type="primary" 
+          plain 
+          @click="resetFilters"
+        >
+          重置筛选条件
+        </el-button>
+      </el-empty>
     </div>
 
     <!-- 订阅配置内容预览弹窗（移动端响应式全宽自适应） -->
@@ -69,6 +159,11 @@
           <!-- 元数据及快速操作条 -->
           <div class="meta-and-actions">
             <div class="meta-tags">
+              <!-- 分组标签 -->
+              <el-tag size="small" type="primary" effect="plain" class="modal-group-tag">
+                <el-icon><Folder /></el-icon>
+                {{ previewDialog.config?.group_name || '默认分组' }}
+              </el-tag>
               <el-tag size="small" type="info" effect="plain">
                 大小: {{ formatSize(previewDialog.config?.file_size) }}
               </el-tag>
@@ -130,18 +225,25 @@
 /**
  * 引入依赖与 Store
  */
-import { reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useConfigStore } from '../../stores/config'
 import { useDeviceStore } from '../../stores/device'
 import { getContent, downloadConfig } from '../../api/configs'
 import ConfigCard from '../../components/config/ConfigCard.vue'
 import YamlEditor from '../../components/config/YamlEditor.vue'
 import { ElMessage } from 'element-plus'
-import { Link, DocumentCopy, Download } from '@element-plus/icons-vue'
+import { Link, DocumentCopy, Download, Folder, Search } from '@element-plus/icons-vue'
 
 // 状态 Store 实例
 const configStore = useConfigStore()
 const deviceStore = useDeviceStore()
+
+// 视图模式: 'grouped' (分组聚合) / 'flat' (平铺网格)
+const viewMode = ref('grouped')
+
+// 分组筛选与搜索关键词
+const selectedGroup = ref('all')
+const searchKeyword = ref('')
 
 // 预览弹窗响应式状态
 const previewDialog = reactive({
@@ -151,6 +253,98 @@ const previewDialog = reactive({
   loading: false,
   error: false
 })
+
+/**
+ * 计算各个分组的配置数量统计列表
+ */
+const groupStats = computed(() => {
+  const map = {}
+  configStore.configList.forEach(item => {
+    const grp = item.group_name || '默认分组'
+    map[grp] = (map[grp] || 0) + 1
+  })
+  const list = Object.keys(map).map(name => ({
+    name,
+    count: map[name]
+  }))
+  list.sort((a, b) => {
+    if (a.name === '默认分组') return -1
+    if (b.name === '默认分组') return 1
+    return a.name.localeCompare(b.name)
+  })
+  return list
+})
+
+/**
+ * 响应式过滤后的配置文件列表（根据分组与搜索词过滤）
+ */
+const filteredConfigs = computed(() => {
+  let list = configStore.configList
+
+  // 1. 分组筛选
+  if (selectedGroup.value !== 'all') {
+    list = list.filter(item => (item.group_name || '默认分组') === selectedGroup.value)
+  }
+
+  // 2. 关键词搜索
+  if (searchKeyword.value.trim()) {
+    const kw = searchKeyword.value.trim().toLowerCase()
+    list = list.filter(item => {
+      const nameMatch = item.name && item.name.toLowerCase().includes(kw)
+      const descMatch = item.description && item.description.toLowerCase().includes(kw)
+      const groupMatch = item.group_name && item.group_name.toLowerCase().includes(kw)
+      return nameMatch || descMatch || groupMatch
+    })
+  }
+
+  return list
+})
+
+/**
+ * 是否应该以分组块形式聚合展示
+ */
+const shouldShowGroupedSections = computed(() => {
+  return (
+    selectedGroup.value === 'all' &&
+    !searchKeyword.value.trim() &&
+    viewMode.value === 'grouped' &&
+    configStore.configList.length > 0
+  )
+})
+
+/**
+ * 分组聚合块数据列表
+ */
+const groupedSectionList = computed(() => {
+  const map = {}
+  configStore.configList.forEach(item => {
+    const grp = item.group_name || '默认分组'
+    if (!map[grp]) {
+      map[grp] = []
+    }
+    map[grp].push(item)
+  })
+
+  const groupNames = Object.keys(map)
+  groupNames.sort((a, b) => {
+    if (a === '默认分组') return -1
+    if (b === '默认分组') return 1
+    return a.localeCompare(b)
+  })
+
+  return groupNames.map(name => ({
+    name,
+    configs: map[name]
+  }))
+})
+
+/**
+ * 重置所有筛选条件
+ */
+const resetFilters = () => {
+  selectedGroup.value = 'all'
+  searchKeyword.value = ''
+}
 
 /**
  * 格式化文件字节大小
@@ -292,7 +486,17 @@ onMounted(() => {
 }
 
 .page-header {
-  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.header-titles {
+  flex: 1;
+  min-width: 240px;
 }
 
 .page-title {
@@ -307,6 +511,131 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
+/* 分组过滤与搜索工具栏 */
+.filter-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.group-pills-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.group-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.group-pill:hover {
+  border-color: var(--color-primary);
+  color: var(--text-primary);
+}
+
+.group-pill.active {
+  background: #f0f9ff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.pill-icon {
+  font-size: 13px;
+}
+
+.pill-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 11px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  color: inherit;
+}
+
+.group-pill.active .pill-badge {
+  background: #bae6fd;
+  color: var(--color-primary);
+}
+
+.filter-search-box {
+  min-width: 240px;
+}
+
+.search-input {
+  width: 100%;
+}
+
+:deep(.search-input .el-input__wrapper) {
+  background-color: var(--bg-card);
+  border-radius: 20px;
+}
+
+/* 分组聚合展示区域 */
+.grouped-sections-container {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.group-section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-icon {
+  font-size: 18px;
+  color: var(--color-primary);
+}
+
+.section-name {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.section-count-badge {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* 卡片网格 */
 .configs-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -370,7 +699,15 @@ onMounted(() => {
 .meta-tags {
   display: flex;
   gap: 6px;
+  align-items: center;
   flex-wrap: wrap;
+}
+
+.modal-group-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 4px;
 }
 
 .quick-actions {
@@ -434,6 +771,13 @@ onMounted(() => {
   .page-title {
     font-size: 20px;
   }
+  .filter-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-search-box {
+    width: 100%;
+  }
   .sub-link-row {
     flex-direction: column;
     align-items: flex-start;
@@ -451,3 +795,4 @@ onMounted(() => {
   }
 }
 </style>
+

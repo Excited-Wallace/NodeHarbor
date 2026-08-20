@@ -42,6 +42,7 @@ class Config(Base):
         - name: 配置文件显示名称
         - filename: 实际存储于 uploads/ 目录下的文件名
         - description: 配置文件的说明描述
+        - group_name: 配置分组名称 (例如 '默认分组', 'VIP专线', '自建节点', 默认为 '默认分组')
         - file_size: 文件大小（字节）
         - is_public: 是否对普通用户可见（默认 True，False 为仅管理员可见）
         - subscription_url: 原始订阅链接（若通过 URL 导入或关联了订阅源）
@@ -59,6 +60,7 @@ class Config(Base):
     name: Mapped[str] = mapped_column(String, index=True) # 配置文件显示名称
     filename: Mapped[str] = mapped_column(String) # 实际存储文件名
     description: Mapped[str] = mapped_column(String, nullable=True) # 配置描述
+    group_name: Mapped[str] = mapped_column(String, default="默认分组", nullable=True, index=True) # 配置所属分组名称 (默认: 默认分组)
     file_size: Mapped[int] = mapped_column(Integer) # 文件大小（字节）
     is_public: Mapped[bool] = mapped_column(Boolean, default=True) # 对普通用户是否可见 (True: 可见, False: 隐藏)
     subscription_url: Mapped[str] = mapped_column(String, nullable=True) # 原始订阅源地址
@@ -69,6 +71,28 @@ class Config(Base):
     last_auto_update_status: Mapped[str] = mapped_column(String, nullable=True) # 上次自动更新执行状态描述
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow) # 创建/上传时间
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow) # 最后修改时间
+
+class ConfigGroup(Base):
+    """
+    配置分组模型，用于存储管理员自由创建的分组实体与分类信息
+    
+    字段说明：
+        - id: 主键 ID
+        - name: 分组名称 (唯一，例如 '默认分组', 'VIP专线', '自建节点')
+        - description: 分组说明或备注信息
+        - sort_order: 排序权重 (数字越小越靠前，默认 0)
+        - created_at: 分组创建时间
+        - updated_at: 分组最后修改时间
+    """
+    __tablename__ = "config_groups"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, unique=True, index=True) # 分组显示名称
+    description: Mapped[str] = mapped_column(String, nullable=True) # 分组说明描述
+    sort_order: Mapped[int] = mapped_column(Integer, default=0) # 排序权重
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow) # 创建时间
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow) # 最后更新时间
+
 
 class ClientDownload(Base):
     """

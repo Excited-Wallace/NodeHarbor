@@ -1,61 +1,74 @@
 /**
- * variables.css - CSS 变量定义（设计 Token）
+ * variables.css - 全局 CSS 变量与设计 Token 定义
  * 
- * 包含：
- *   - 主题色彩（primary, success, warning, danger, info）
- *   - 背景色（深色主题）
- *   - 文字颜色
- *   - 间距尺寸（spacing-xs, sm, md, lg, xl）
- *   - 圆角大小
- *   - 阴影效果
- *   - 字体设置
- *   - 过渡时间
+ * 作用：
+ *   - 定义整站浅色主题调色盘（主色为海港科技蓝，次色为清新浅绿/翡翠绿，与网站图标保持一致）
+ *   - 规范背景层级（白色容器、浅灰蓝底色、浅蓝/浅绿悬停与激活态）
+ *   - 规范文字层级（深蓝黑标题正文、沉稳深灰次级文字、浅灰弱化文本）
+ *   - 规范间距、圆角与优雅弥散阴影
  */
 
 :root {
-  /* Colors - Primary (Blue/Indigo gradient vibe) */
-  --color-primary: #38bdf8;
-  --color-primary-dark: #0284c7;
-  --color-secondary: #818cf8;
+  /* 品牌核心色彩 - 科技蓝与清新浅绿，与网站图标高度一致 */
+  --color-primary: #0284c7;             /* 科技蓝主色 (对比度强、清晰易读) */
+  --color-primary-light: #0ea5e9;       /* 明亮天蓝 */
+  --color-primary-subtle: #38bdf8;      /* 柔和浅蓝 */
+  --color-primary-dark: #0369a1;        /* 深海蓝 */
+  --color-secondary: #10b981;           /* 清新浅绿 / 翡翠绿 */
+  --color-secondary-light: #34d399;     /* 明亮薄荷绿 */
+  --color-secondary-dark: #059669;      /* 深翡翠绿 */
+  --color-accent: #06b6d4;              /* 蓝绿过渡青色 (Cyan) */
   
-  /* Status Colors */
+  /* 品牌渐变 */
+  --gradient-primary: linear-gradient(135deg, #0284c7 0%, #10b981 100%);
+  --gradient-hover: linear-gradient(135deg, #0ea5e9 0%, #34d399 100%);
+  --gradient-subtle: linear-gradient(135deg, rgba(2, 132, 199, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%);
+
+  /* 状态色彩 */
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
   --color-info: #64748b;
 
-  /* Backgrounds */
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-card: rgba(30, 41, 59, 0.7);
-  --bg-hover: rgba(255, 255, 255, 0.05);
+  /* 浅色背景层级 */
+  --bg-primary: #f8fafc;                /* 页面底层主背景 (Slate-50) */
+  --bg-secondary: #ffffff;              /* 容器/侧边栏/顶部纯白背景 */
+  --bg-card: #ffffff;                   /* 卡片纯白背景 */
+  --bg-hover: #f0fdf4;                  /* 浅绿微光悬停态背景 */
+  --bg-hover-blue: #f0f9ff;             /* 浅蓝微光悬停态背景 */
+  --bg-active: #e0f2fe;                 /* 激活态浅蓝 */
+  --bg-muted: #f1f5f9;                  /* 浅灰底色 (Slate-100) */
 
-  /* Text Colors */
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  /* 文字颜色（高对比度、清晰锐利） */
+  --text-primary: #0f172a;              /* 主标题与正文 (Slate-900) */
+  --text-secondary: #475569;            /* 次级说明文字 (Slate-600) */
+  --text-muted: #94a3b8;                /* 辅助弱化文本 (Slate-400) */
+  --text-inverted: #ffffff;             /* 反白文字 */
 
-  /* Spacing */
+  /* 间距尺寸 */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
   --space-lg: 24px;
   --space-xl: 32px;
 
-  /* Border & Radius */
-  --border-color: rgba(255, 255, 255, 0.1);
+  /* 边框与圆角 */
+  --border-color: #e2e8f0;              /* 柔和浅色边框 (Slate-200) */
+  --border-color-light: #f1f5f9;        /* 极浅边框 */
+  --border-focus: #38bdf8;              /* 聚焦态边框 */
   --radius-sm: 6px;
   --radius-md: 12px;
-  --radius-lg: 24px;
+  --radius-lg: 20px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-card: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  /* 阴影效果（优雅弥散微阴影） */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+  --shadow-card: 0 4px 20px -2px rgba(2, 132, 199, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+  --shadow-card-hover: 0 10px 25px -3px rgba(2, 132, 199, 0.12), 0 4px 10px -2px rgba(16, 185, 129, 0.08);
 
-  /* Typography */
-  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  /* 字体与过渡动画 */
+  --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --transition-fast: 0.2s ease;
-  --transition-normal: 0.3s ease;
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }

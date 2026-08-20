@@ -26,6 +26,18 @@
           </div>
         </div>
       </el-card>
+
+      <el-card class="stat-card clickable-card" shadow="hover" @click="router.push('/admin/users')">
+        <div class="stat-content">
+          <div class="stat-icon users-icon">
+            <el-icon><User /></el-icon>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ stats.users_count || 0 }}</div>
+            <div class="stat-label">系统用户</div>
+          </div>
+        </div>
+      </el-card>
       
       <el-card class="stat-card" shadow="hover">
         <div class="stat-content">
@@ -88,6 +100,10 @@
         <el-icon class="action-icon"><Setting /></el-icon>
         <span class="action-text">管理配置</span>
       </el-card>
+      <el-card class="action-card" @click="router.push('/admin/users')">
+        <el-icon class="action-icon"><User /></el-icon>
+        <span class="action-text">用户管理</span>
+      </el-card>
       <el-card class="action-card" @click="router.push('/admin/clients')">
         <el-icon class="action-icon"><Download /></el-icon>
         <span class="action-text">软件下载</span>
@@ -104,7 +120,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../../api'
 import { clearAllCache } from '../../api/clients'
-import { Document, Download, Coin, Folder, Plus, Setting } from '@element-plus/icons-vue'
+import { Document, Download, Coin, Folder, Plus, Setting, User } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
@@ -114,7 +130,8 @@ const stats = ref({
   database_size: 0,
   configs_count: 0,
   downloads_size: 0,
-  cached_clients_count: 0
+  cached_clients_count: 0,
+  users_count: 0
 })
 const clearing = ref(false)
 
@@ -221,6 +238,16 @@ onMounted(() => {
   border-radius: var(--radius-md) !important;
 }
 
+.clickable-card {
+  cursor: pointer;
+  transition: all var(--transition-fast) !important;
+}
+
+.clickable-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary) !important;
+}
+
 .stat-content {
   display: flex;
   align-items: center;
@@ -239,23 +266,33 @@ onMounted(() => {
 }
 
 .configs-icon {
-  background: rgba(56, 189, 248, 0.12);
-  color: #38bdf8;
+  background: #f0f9ff;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+}
+
+.users-icon {
+  background: #f0fdf4;
+  color: #10b981;
+  border: 1px solid #a7f3d0;
 }
 
 .clients-icon {
-  background: rgba(16, 185, 129, 0.12);
-  color: #10b981;
+  background: #ecfeff;
+  color: #06b6d4;
+  border: 1px solid #a5f3fc;
 }
 
 .db-icon {
-  background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
 }
 
 .storage-icon {
-  background: rgba(129, 140, 248, 0.12);
-  color: #818cf8;
+  background: #f0fdfa;
+  color: #0d9488;
+  border: 1px solid #99f6e4;
 }
 
 .stat-info {
@@ -285,6 +322,7 @@ onMounted(() => {
 .action-card {
   cursor: pointer;
   border: 1px solid var(--border-color) !important;
+  background: var(--bg-card) !important;
   transition: all var(--transition-fast) !important;
   display: flex;
   flex-direction: column;
@@ -292,13 +330,15 @@ onMounted(() => {
   justify-content: center;
   padding: 22px 14px;
   border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-card) !important;
   -webkit-tap-highlight-color: transparent;
 }
 
 .action-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   border-color: var(--color-primary) !important;
-  box-shadow: var(--shadow-lg) !important;
+  box-shadow: var(--shadow-card-hover) !important;
+  background: var(--bg-hover-blue) !important;
 }
 
 .action-card:active {

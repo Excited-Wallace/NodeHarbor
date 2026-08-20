@@ -55,6 +55,48 @@ class UserInfo(BaseModel):
     username: str
     role: str
 
+class UserResponse(BaseModel):
+    """
+    用户管理响应模型
+    
+    字段说明：
+        id: 用户主键 ID
+        username: 用户登录账号名
+        role: 角色 ('admin' 或 'user')
+        created_at: 账号创建时间
+    """
+    id: int
+    username: str
+    role: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class UserCreate(BaseModel):
+    """
+    新增用户请求模型
+    
+    字段说明：
+        username: 账号名（必填，3-32位字符）
+        password: 登录密码（必填，至少 3 位字符）
+        role: 角色分配（'user' 普通用户 / 'admin' 管理员，默认为 'user'）
+    """
+    username: str = Field(..., min_length=2, max_length=32, description="用户登录账号名")
+    password: str = Field(..., min_length=3, max_length=128, description="登录初始密码")
+    role: str = Field("user", description="用户角色 (admin/user)")
+
+class UserUpdate(BaseModel):
+    """
+    编辑用户/修改密码请求模型
+    
+    字段说明：
+        password: 新密码（可选，若提供则重置密码，留空或 None 则不修改密码）
+        role: 目标角色（可选，'admin' 或 'user'）
+    """
+    password: Optional[str] = Field(None, min_length=3, max_length=128, description="新登录密码（留空表示不修改）")
+    role: Optional[str] = Field(None, description="变更用户角色 (admin/user)")
+
 # ==========================================
 # 2. 代理订阅配置相关模型
 # ==========================================
@@ -68,6 +110,7 @@ class ConfigResponse(BaseModel):
         - name: 配置文件显示名称
         - filename: 存储文件名
         - description: 详细描述
+        - group_name: 所属分组名称 (默认为 '默认分组')
         - file_size: 文件大小（字节）
         - is_public: 是否对普通用户可见
         - subscription_url: 原始订阅链接
@@ -83,6 +126,7 @@ class ConfigResponse(BaseModel):
     name: str
     filename: str
     description: Optional[str] = None
+    group_name: Optional[str] = "默认分组"
     file_size: int
     is_public: bool = True
     subscription_url: Optional[str] = None
@@ -103,7 +147,77 @@ class ConfigCreate(BaseModel):
     """
     name: str
     description: Optional[str] = None
+    group_name: Optional[str] = "默认分组"
     is_public: bool = True
+
+class ConfigGroupUpdate(BaseModel):
+    """
+    单条配置文件修改所属分组的请求模型
+    
+    字段说明：
+        group_name: 目标分组名称 (如 '默认分组'、'VIP专线'、'自建节点')
+    """
+    group_name: str = Field(..., min_length=1, max_length=64, description="配置所属分组名称")
+
+class ConfigBatchGroupUpdate(BaseModel):
+    """
+    批量调整多个配置文件分组的请求模型
+    
+    字段说明：
+        config_ids: 待调整的配置 ID 列表
+        group_name: 目标分组名称
+    """
+    config_ids: List[int] = Field(..., min_items=1, description="待调整分组的配置 ID 列表")
+    group_name: str = Field(..., min_length=1, max_length=64, description="目标分组名称")
+
+class ConfigGroupCreate(BaseModel):
+    """
+    管理员新建配置分组请求模型
+    
+    字段说明：
+        name: 分组名称 (必填，1-64字符)
+        description: 分组描述说明 (选填)
+        sort_order: 排序权重 (选填，默认0)
+    """
+    name: str = Field(..., min_length=1, max_length=64, description="分组显示名称")
+    description: Optional[str] = Field(None, max_length=255, description="分组描述说明")
+    sort_order: Optional[int] = Field(0, description="排序权重 (数字越小越靠前)")
+
+class ConfigGroupUpdateBody(BaseModel):
+    """
+    管理员修改配置分组信息请求模型
+    
+    字段说明：
+        name: 新分组名称 (选填)
+        description: 新分组描述说明 (选填)
+        sort_order: 新排序权重 (选填)
+    """
+    name: Optional[str] = Field(None, min_length=1, max_length=64, description="新分组显示名称")
+    description: Optional[str] = Field(None, max_length=255, description="新分组描述说明")
+    sort_order: Optional[int] = Field(None, description="排序权重")
+
+class ConfigGroupItem(BaseModel):
+    """
+    分组详情及统计信息项模型
+    
+    字段说明：
+        id: 分组 ID (如果已持久化)
+        name: 分组名称
+        description: 分组描述说明
+        sort_order: 排序权重
+        count: 该分组下的配置文件数量
+        created_at: 分组创建时间
+    """
+    id: Optional[int] = None
+    name: str = Field(..., description="分组名称")
+    description: Optional[str] = Field(None, description="分组描述")
+    sort_order: int = Field(0, description="排序权重")
+    count: int = Field(0, description="该分组下的配置数量")
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
 
 class ConfigVisibilityUpdate(BaseModel):
     """
@@ -292,3 +406,4 @@ class SystemStatusResponse(BaseModel):
     configs_count: int
     downloads_size: int
     cached_clients_count: int
+    users_count: int = 0

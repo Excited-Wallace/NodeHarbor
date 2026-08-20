@@ -35,7 +35,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
-import { DataBoard, Document, Download, List } from '@element-plus/icons-vue'
+import { DataBoard, Document, Download, List, User } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -48,6 +48,7 @@ const navItems = computed(() => {
     return [
       { path: '/admin', label: '仪表盘', icon: DataBoard },
       { path: '/admin/configs', label: '配置管理', icon: Document },
+      { path: '/admin/users', label: '用户管理', icon: User },
       { path: '/admin/clients', label: '软件下载', icon: Download }
     ]
   } else {
@@ -80,12 +81,12 @@ const isItemActive = (targetPath) => {
   left: 0;
   right: 0;
   z-index: 1000;
-  background: rgba(15, 23, 42, 0.88);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-top: 1px solid var(--border-color, #e2e8f0);
   padding-bottom: env(safe-area-inset-bottom, 0);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .nav-items-container {
@@ -105,7 +106,7 @@ const isItemActive = (targetPath) => {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: var(--text-secondary, #94a3b8);
+  color: var(--text-secondary, #64748b);
   text-decoration: none;
   font-size: 11px;
   font-weight: 500;
@@ -139,8 +140,8 @@ const isItemActive = (targetPath) => {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--color-primary, #38bdf8);
-  box-shadow: 0 0 8px var(--color-primary, #38bdf8);
+  background: var(--color-secondary, #10b981);
+  box-shadow: 0 0 6px var(--color-secondary, #10b981);
 }
 
 .nav-label {
@@ -149,7 +150,8 @@ const isItemActive = (targetPath) => {
 
 /* 激活高亮效果 */
 .nav-item.is-active {
-  color: var(--color-primary, #38bdf8);
+  color: var(--color-primary, #0284c7);
+  font-weight: 600;
 }
 
 .nav-item.is-active .icon-wrapper {
@@ -157,7 +159,7 @@ const isItemActive = (targetPath) => {
 }
 
 .nav-item.is-active .nav-icon {
-  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.6));
+  color: var(--color-primary, #0284c7);
 }
 
 .nav-item:active {

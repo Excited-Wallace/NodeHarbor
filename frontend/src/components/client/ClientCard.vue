@@ -111,20 +111,21 @@ const authStore = useAuthStore()
 <style scoped>
 .client-card-wrapper {
   position: relative;
-  background: var(--bg-card, #1a1d24);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
+  box-shadow: var(--shadow-card);
 }
 
 .client-card-wrapper:hover {
   transform: translateY(-4px);
-  border-color: rgba(99, 102, 241, 0.4);
-  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px 0 rgba(99, 102, 241, 0.15);
+  border-color: var(--color-primary, #0284c7);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .card-glow {
@@ -133,14 +134,14 @@ const authStore = useAuthStore()
   left: 0;
   right: 0;
   height: 100px;
-  background: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15), transparent 70%);
+  background: radial-gradient(ellipse at top, rgba(2, 132, 199, 0.08), transparent 70%);
   pointer-events: none;
   transition: opacity 0.35s ease;
 }
 
 .client-card-wrapper:hover .card-glow {
   opacity: 1;
-  background: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.25), transparent 70%);
+  background: radial-gradient(ellipse at top, rgba(2, 132, 199, 0.16), transparent 70%);
 }
 
 .card-content {
@@ -164,19 +165,19 @@ const authStore = useAuthStore()
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.25);
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #818cf8;
+  color: var(--color-primary, #0284c7);
   flex-shrink: 0;
   transition: all 0.3s ease;
 }
 
 .client-card-wrapper:hover .icon-box {
-  background: rgba(99, 102, 241, 0.2);
-  color: #a5b4fc;
+  background: #e0f2fe;
+  color: #0369a1;
   transform: scale(1.05);
 }
 
@@ -201,7 +202,7 @@ const authStore = useAuthStore()
   margin: 0;
   font-size: 17px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary, #0f172a);
   letter-spacing: -0.2px;
 }
 
@@ -210,15 +211,15 @@ const authStore = useAuthStore()
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 20px;
-  background: rgba(99, 102, 241, 0.15);
-  color: #a5b4fc;
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: #f0fdf4;
+  color: #059669;
+  border: 1px solid #a7f3d0;
 }
 
 .repo-name {
   display: block;
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-muted, #94a3b8);
   margin-top: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -228,7 +229,7 @@ const authStore = useAuthStore()
 .client-desc {
   font-size: 13px;
   line-height: 1.5;
-  color: #cbd5e1;
+  color: var(--text-secondary, #475569);
   margin: 0 0 16px;
   flex: 1;
 }
@@ -247,25 +248,25 @@ const authStore = useAuthStore()
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #e2e8f0;
+  background: #f8fafc;
+  border: 1px solid var(--border-color, #e2e8f0);
+  color: var(--text-secondary, #475569);
 }
 
 .platform-pill .dot {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #10b981;
+  background: var(--color-secondary, #10b981);
 }
 
 .cached-pill {
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 6px;
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #34d399;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #059669;
   font-weight: 500;
 }
 
@@ -275,7 +276,7 @@ const authStore = useAuthStore()
   justify-content: space-between;
   gap: 10px;
   padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--border-color, #e2e8f0);
 }
 
 .github-link {
@@ -283,17 +284,17 @@ const authStore = useAuthStore()
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-secondary, #64748b);
   text-decoration: none;
   padding: 6px 10px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  background: #f1f5f9;
   transition: all 0.2s ease;
 }
 
 .github-link:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-primary, #0284c7);
+  background: #e0f2fe;
 }
 
 .select-btn {
@@ -303,19 +304,20 @@ const authStore = useAuthStore()
   padding: 7px 14px;
   border-radius: 8px;
   border: none;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, #0284c7 0%, #10b981 100%));
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
   -webkit-tap-highlight-color: transparent;
 }
 
 .select-btn:hover {
-  background: linear-gradient(135deg, #7c7ffa 0%, #6366f1 100%);
+  background: var(--gradient-hover, linear-gradient(135deg, #0ea5e9 0%, #34d399 100%));
   transform: translateX(2px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
 }
 
 @media (max-width: 480px) {

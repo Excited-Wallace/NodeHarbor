@@ -210,7 +210,7 @@ onMounted(() => {
   margin: 0 0 8px;
   font-size: 24px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-primary, #0f172a);
   letter-spacing: -0.5px;
 }
 
@@ -218,18 +218,18 @@ onMounted(() => {
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
-  color: #94a3b8;
+  color: var(--text-secondary, #64748b);
   max-width: 600px;
 }
 
 /* 缓存容量小部件 (Admin 专属) */
 .cache-status-widget {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 12px;
   padding: 14px 18px;
   min-width: 320px;
-  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-card);
   box-sizing: border-box;
 }
 
@@ -246,7 +246,7 @@ onMounted(() => {
   gap: 6px;
   font-size: 13px;
   font-weight: 600;
-  color: #e2e8f0;
+  color: var(--text-primary, #0f172a);
 }
 
 .clear-cache-btn {
@@ -262,20 +262,20 @@ onMounted(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 8px #10b981;
+  background: var(--color-secondary, #10b981);
+  box-shadow: 0 0 6px var(--color-secondary, #10b981);
 }
 
 .widget-usage {
   font-size: 12px;
   font-weight: 700;
-  color: #818cf8;
+  color: var(--color-primary, #0284c7);
   font-family: monospace;
 }
 
 .usage-progress-bar {
   height: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  background: #f1f5f9;
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -283,7 +283,7 @@ onMounted(() => {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #6366f1, #10b981);
+  background: var(--gradient-primary, linear-gradient(90deg, #0284c7, #10b981));
   border-radius: 4px;
   transition: width 0.4s ease;
 }
@@ -297,16 +297,16 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted, #94a3b8);
 }
 
 .footer-tip {
-  color: #94a3b8;
+  color: var(--text-secondary, #64748b);
 }
 
 .footer-count {
-  color: #a5b4fc;
-  font-weight: 500;
+  color: var(--color-primary, #0284c7);
+  font-weight: 600;
 }
 
 /* 客户端卡片网格布局 */

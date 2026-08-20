@@ -17,7 +17,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth, configs, clients, system
+from app.routers import auth, configs, clients, system, users
 from app.database import engine, SessionLocal, migrate_database
 from app.models import Base
 from app.services.auth_service import init_default_users
@@ -90,6 +90,7 @@ app.include_router(auth.router)
 app.include_router(configs.router)
 app.include_router(clients.router)
 app.include_router(system.router)
+app.include_router(users.router)
 
 @app.get("/")
 def root():

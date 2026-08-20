@@ -10,7 +10,8 @@
 <template>
   <div class="header-content" :class="{ 'mobile-header': deviceStore.isMobile }">
     <!-- 品牌 Logo 区域 -->
-    <div class="logo-area">
+    <div class="logo-area" @click="handleLogoClick" title="返回首页">
+      <img src="/nodeharborico.png" alt="NodeHarbor Logo" class="brand-logo-img" />
       <h1 class="logo-text">NodeHarbor</h1>
     </div>
     
@@ -62,6 +63,17 @@ const deviceStore = useDeviceStore()
 const router = useRouter()
 
 /**
+ * 点击 Logo 返回主页（管理员跳 /admin，普通用户跳 /）
+ */
+const handleLogoClick = () => {
+  if (authStore.isAdmin) {
+    router.push('/admin')
+  } else {
+    router.push('/')
+  }
+}
+
+/**
  * 处理退出登录：清除用户 Token 状态并重定向至 /login
  */
 const handleLogout = () => {
@@ -83,11 +95,43 @@ const handleLogout = () => {
   padding: 0 14px;
 }
 
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s ease;
+}
+
+.logo-area:hover {
+  opacity: 0.9;
+}
+
+.brand-logo-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.25);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.logo-area:hover .brand-logo-img {
+  transform: rotate(6deg) scale(1.08);
+}
+
+.mobile-header .brand-logo-img {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
 .logo-text {
   margin: 0;
   font-size: 22px;
   font-weight: 700;
-  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  background: var(--gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -0.5px;
@@ -119,14 +163,17 @@ const handleLogout = () => {
 }
 
 .avatar {
-  background: var(--bg-secondary);
+  background: var(--bg-hover-blue);
   color: var(--color-primary);
   font-weight: bold;
   flex-shrink: 0;
+  border: 1px solid rgba(2, 132, 199, 0.2);
 }
 
 .avatar.admin {
+  background: #fef2f2;
   color: var(--color-danger);
+  border-color: rgba(239, 68, 68, 0.2);
 }
 
 .username {
