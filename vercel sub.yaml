@@ -59,9 +59,9 @@ dns:
     - https://dns.alidns.com/dns-query
 proxies:
   - {name: 🇭🇰 Vercel-HK-Amazon.com, server: vercelhk.undefined.cc.cd, port: 443, type: vless, uuid: 7aea8948-c65d-46fa-a611-e75e33ab9629, tls: true, tfo: false, skip-cert-verify: true, servername: vercelhk.undefined.cc.cd, client-fingerprint: chrome, network: ws, ws-opts: {path: /7aea8948, headers: {Host: vercelhk.undefined.cc.cd}}}
-  - {name: 🇭🇰 Vercel-HK-Amazon.com 2, server: vercelhk.undefined.cc.cd, port: 443, type: trojan, password: 7aea8948-c65d-46fa-a611-e75e33ab9629, sni: vercelhk.undefined.cc.cd, client-fingerprint: chrome, skip-cert-verify: true, network: ws, ws-opts: {path: /7aea8948, headers: {Host: vercelhk.undefined.cc.cd}}}
   - {name: 🇸🇬 Vercel-SG-Amazon.com, server: vercelsg.undefined.cc.cd, port: 443, type: vless, uuid: 7aea8948-c65d-46fa-a611-e75e33ab9629, tls: true, tfo: false, skip-cert-verify: true, servername: vercelsg.undefined.cc.cd, client-fingerprint: chrome, network: ws, ws-opts: {path: /7aea8948, headers: {Host: vercelsg.undefined.cc.cd}}}
-  - {name: 🇸🇬 Vercel-SG-Amazon.com 2, server: vercelsg.undefined.cc.cd, port: 443, type: trojan, password: 7aea8948-c65d-46fa-a611-e75e33ab9629, sni: vercelsg.undefined.cc.cd, client-fingerprint: chrome, skip-cert-verify: true, network: ws, ws-opts: {path: /7aea8948, headers: {Host: vercelsg.undefined.cc.cd}}}
+  - {name: Excited_Wallace-7.95TB📊, server: xui.undefined.cc.cd, port: 2087, type: vless, uuid: a5510f25-2c2d-44c7-91b5-1bb087999ee8, tls: true, alpn: [h2%2Chttp%2F1.1], tfo: false, skip-cert-verify: true, servername: xui.undefined.cc.cd, client-fingerprint: chrome, network: ws, ws-opts: {path: /node, headers: {Host: xui.undefined.cc.cd}}}
+  - {name: edgetunnel, server: edgetunnel.undefined.cc.cd, port: 443, type: vless, uuid: fe7b0699-6520-4ebd-8f98-1ff49adc560a, tls: true, tfo: false, skip-cert-verify: true, servername: edgetunnel.undefined.cc.cd, client-fingerprint: chrome, network: ws, ws-opts: {path: /, headers: {Host: edgetunnel.undefined.cc.cd}}}
 proxy-groups:
   - name: 🚀 节点选择
     type: select
@@ -78,9 +78,9 @@ proxy-groups:
     type: select
     proxies:
       - 🇭🇰 Vercel-HK-Amazon.com
-      - 🇭🇰 Vercel-HK-Amazon.com 2
       - 🇸🇬 Vercel-SG-Amazon.com
-      - 🇸🇬 Vercel-SG-Amazon.com 2
+      - Excited_Wallace-7.95TB📊
+      - edgetunnel
   - name: ♻️ 自动选择
     type: url-test
     url: https://cp.cloudflare.com/generate_204
@@ -88,9 +88,9 @@ proxy-groups:
     tolerance: 200
     proxies:
       - 🇭🇰 Vercel-HK-Amazon.com
-      - 🇭🇰 Vercel-HK-Amazon.com 2
       - 🇸🇬 Vercel-SG-Amazon.com
-      - 🇸🇬 Vercel-SG-Amazon.com 2
+      - Excited_Wallace-7.95TB📊
+      - edgetunnel
   - name: 🌍 国外媒体
     type: select
     proxies:
@@ -158,9 +158,9 @@ proxy-groups:
       - 🇯🇵 日本自动
       - 🚀 手动切换1
       - 🇭🇰 Vercel-HK-Amazon.com
-      - 🇭🇰 Vercel-HK-Amazon.com 2
       - 🇸🇬 Vercel-SG-Amazon.com
-      - 🇸🇬 Vercel-SG-Amazon.com 2
+      - Excited_Wallace-7.95TB📊
+      - edgetunnel
   - name: 🔑 RemoteSSH
     type: select
     proxies:
@@ -190,9 +190,9 @@ proxy-groups:
       - 🇯🇵 日本自动
       - 🚀 手动切换1
       - 🇭🇰 Vercel-HK-Amazon.com
-      - 🇭🇰 Vercel-HK-Amazon.com 2
       - 🇸🇬 Vercel-SG-Amazon.com
-      - 🇸🇬 Vercel-SG-Amazon.com 2
+      - Excited_Wallace-7.95TB📊
+      - edgetunnel
   - name: 🇺🇲 美国自动
     type: url-test
     url: https://cp.cloudflare.com/generate_204
@@ -207,7 +207,6 @@ proxy-groups:
     tolerance: 150
     proxies:
       - 🇭🇰 Vercel-HK-Amazon.com
-      - 🇭🇰 Vercel-HK-Amazon.com 2
   - name: 🇨🇳 台湾自动
     type: url-test
     url: https://cp.cloudflare.com/generate_204
@@ -222,7 +221,6 @@ proxy-groups:
     tolerance: 150
     proxies:
       - 🇸🇬 Vercel-SG-Amazon.com
-      - 🇸🇬 Vercel-SG-Amazon.com 2
   - name: 🇯🇵 日本自动
     type: url-test
     url: https://cp.cloudflare.com/generate_204
