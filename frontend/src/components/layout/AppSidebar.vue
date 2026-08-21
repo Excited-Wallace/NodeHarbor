@@ -3,7 +3,7 @@
   
   组件作用：
     - 根据当前登录用户的角色（管理员 / 普通用户）动态渲染侧边栏导航菜单
-    - 管理员菜单项：仪表盘 (/admin)、配置管理 (/admin/configs)、软件下载 (/admin/clients)
+    - 管理员菜单项：仪表盘 (/admin)、配置管理 (/admin/configs)、配置列表 (/admin/config-list)、用户管理 (/admin/users)、软件下载 (/admin/clients)
     - 普通用户菜单项：仪表盘 (/)、配置列表 (/configs)、软件下载 (/clients)
     - 监听路由动态高亮当前选中项
 -->
@@ -22,6 +22,10 @@
       <el-menu-item index="/admin/configs">
         <el-icon><Document /></el-icon>
         <span>配置管理</span>
+      </el-menu-item>
+      <el-menu-item index="/admin/config-list">
+        <el-icon><List /></el-icon>
+        <span>配置列表</span>
       </el-menu-item>
       <el-menu-item index="/admin/users">
         <el-icon><User /></el-icon>

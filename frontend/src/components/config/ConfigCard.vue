@@ -75,9 +75,9 @@
         </el-tag>
       </el-tooltip>
 
-      <!-- 管理员视角：普通用户可见性标签 -->
+      <!-- 管理员视角：普通用户可见性标签（管理模式或管理员浏览时展示） -->
       <el-tag
-        v-if="showActions"
+        v-if="showActions || authStore.isAdmin"
         size="small"
         :type="config.is_public ? 'success' : 'info'"
         effect="plain"
@@ -164,11 +164,14 @@
 
 <script setup>
 /**
- * 引入图标与 API
+ * 引入图标、API 与状态 Store
  */
 import { Edit, Delete, Download, Link, View, Timer, Folder } from '@element-plus/icons-vue'
 import { downloadConfig } from '../../api/configs'
+import { useAuthStore } from '../../stores/auth'
 import { ElMessage } from 'element-plus'
+
+const authStore = useAuthStore()
 
 // 组件入参
 const props = defineProps({

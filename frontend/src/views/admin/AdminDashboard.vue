@@ -100,6 +100,10 @@
         <el-icon class="action-icon"><Setting /></el-icon>
         <span class="action-text">管理配置</span>
       </el-card>
+      <el-card class="action-card" @click="router.push('/admin/config-list')">
+        <el-icon class="action-icon"><List /></el-icon>
+        <span class="action-text">配置列表</span>
+      </el-card>
       <el-card class="action-card" @click="router.push('/admin/users')">
         <el-icon class="action-icon"><User /></el-icon>
         <span class="action-text">用户管理</span>
@@ -120,7 +124,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../../api'
 import { clearAllCache } from '../../api/clients'
-import { Document, Download, Coin, Folder, Plus, Setting, User } from '@element-plus/icons-vue'
+import { Document, Download, Coin, Folder, Plus, Setting, User, List } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()

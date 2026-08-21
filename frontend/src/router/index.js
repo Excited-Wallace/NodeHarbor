@@ -45,6 +45,12 @@ const routes = [
         component: () => import('../views/admin/ConfigManager.vue')
       },
       {
+        path: 'config-list',
+        name: 'AdminConfigList',
+        // 管理员界面的配置列表视图：复用用户端卡片聚合与订阅预览页面
+        component: () => import('../views/user/ConfigList.vue')
+      },
+      {
         path: 'configs/:id/edit',
         name: 'AdminConfigEditor',
         component: () => import('../views/admin/ConfigEditor.vue')

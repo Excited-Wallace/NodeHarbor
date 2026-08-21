@@ -50,3 +50,5 @@ logs/
 
 # ===== LICENSE =====
 LICENSE
+
+*.yaml

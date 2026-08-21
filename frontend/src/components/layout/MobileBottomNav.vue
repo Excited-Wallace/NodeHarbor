@@ -48,6 +48,7 @@ const navItems = computed(() => {
     return [
       { path: '/admin', label: '仪表盘', icon: DataBoard },
       { path: '/admin/configs', label: '配置管理', icon: Document },
+      { path: '/admin/config-list', label: '配置列表', icon: List },
       { path: '/admin/users', label: '用户管理', icon: User },
       { path: '/admin/clients', label: '软件下载', icon: Download }
     ]
@@ -61,16 +62,19 @@ const navItems = computed(() => {
 })
 
 /**
- * 判断当前导航项是否处于激活状态（精确匹配或子路由匹配）
+ * 判断当前导航项是否处于激活状态（精确匹配或子路由斜杠前缀匹配）
  * @param {string} targetPath 导航目标路径
- * @returns {boolean}
+ * @returns {boolean} 是否高亮当前项
  */
 const isItemActive = (targetPath) => {
   const currentPath = route.path
   if (targetPath === '/' || targetPath === '/admin') {
     return currentPath === targetPath
   }
-  return currentPath.startsWith(targetPath)
+  if (currentPath === targetPath) {
+    return true
+  }
+  return currentPath.startsWith(targetPath + '/')
 }
 </script>
 
